@@ -1,7 +1,6 @@
 library(data.table)
-library(dplyr)
 library(caret)
-library(readr)
+
 
 dd <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
 
@@ -14,23 +13,28 @@ dd.train <- dd[test==0]
 dd.train[, "test" := NULL]
 dd.test[, "test" := NULL]
 
-
+# Convert datatables to dataframes 
 setDF(dd.train)
+setDF(dd.test)
 
+# Downsample
 set.seed(1)
 dd.train$Class <- factor(dd.train$Class)
 dd.test$Class <- factor(dd.test$Class)
 for.train <- downSample(dd.train[, -ncol(dd.train)], 
                       dd.train$Class)
+for.test <- downSample(dd.test[, -ncol(dd.test)],
+                       dd.test$Class)
 
-table(for.train$Class)
+# Set cross validation parameters
+ctrl <- trainControl(method = "cv", number = 10)
 
-
-ctrl <- trainControl(method = "cv", number = 5)
-
+# Run model
 model <- train(Class ~ ., data = for.train, method = "knn", trControl = ctrl)
 model
 
-prediction <- predict(model, dd.test)
+# Predict on downsampled test set
+prediction <- predict(model, for.test)
 
-confusionMatrix(prediction, dd.test$Class, positive = "1")
+# Confusion matrix
+confusionMatrix(prediction, for.test$Class, positive = "1")
