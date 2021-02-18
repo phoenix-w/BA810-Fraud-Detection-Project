@@ -1,3 +1,6 @@
+# XGBoost R Tutorial
+# https://xgboost.readthedocs.io/en/latest/R-package/xgboostPresentation.html#
+
 library(data.table)
 library(caTools)
 library(xgboost)
