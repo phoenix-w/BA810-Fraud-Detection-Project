@@ -11,8 +11,10 @@ df = fread("creditcard.csv")
 dim(df)
 # V1~V28 all have mean 0 & no missing value
 summary(df)
-# 492 (0.17%) fraud & 284315 non-fraud
+# 492 fraud & 284315 non-fraud
 table(df$Class)
+# 0.17% are fraud
+round(table(df$Class)[2]/nrow(df), 4)
 
 # remove Time
 df[,Time:=NULL]
@@ -24,10 +26,15 @@ set.seed(820)
 split = sample.split(df$Class, SplitRatio=0.8)
 train = as.matrix(subset(df, split==TRUE))
 test = as.matrix(subset(df, split==FALSE))
+
 # 227846 rows in training set
 dim(train)
 # 56961 rows in test set
 dim(test)
+# same proportion of fraud as in df
+round(table(train[,"Class"])[2]/nrow(train), 4)
+round(table(test[,"Class"])[2]/nrow(test), 4)
+
 
 # train XGBoost model
 xgb = xgboost(data=train[,1:29], label=train[,"Class"], objective = "binary:logistic",
