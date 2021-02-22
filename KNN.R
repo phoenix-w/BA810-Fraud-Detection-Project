@@ -17,7 +17,7 @@ dd.test[, "test" := NULL]
 setDF(dd.train)
 setDF(dd.test)
 
-# Downsample
+# Downsample (upsample is computationally expensive)
 set.seed(1)
 dd.train$Class <- factor(dd.train$Class)
 dd.test$Class <- factor(dd.test$Class)

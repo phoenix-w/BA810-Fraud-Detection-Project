@@ -1,0 +1,133 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Load libraries
+library("data.table")
+library("ggplot2")
+library("plyr") 
+library("dplyr")
+library("corrplot") 
+library("pROC") 
+library("glmnet")
+library("caret") 
+library("Rtsne") 
+library("xgboost") 
+library("doMC") 
+library("Amelia")
+library("mlbench")
+library("caTools") # for train/test split
+library("ROSE") # for ROSE sampling
+library("DMwR") # for smote implementation
+library("stringr") # for data manipulation
+
+#-----------
+df <- read.csv("~/Desktop/810supervised/team project/creditcard.csv")
+head(df)  
+
+#-----
+head(df)
+
+str(df)
+#-----
+summary(df)
+#----
+#Check for missing values
+colSums(is.na(df))
+#-------
+#Check class imbalance
+table(df$Class)
+#----------
+prop.table(table(df$Class))
+
+#---------??????????????????????????????????
+theme <- theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggplot(data = df, aes(x = factor(Class), 
+                          y = prop.table(stat(count)), fill = factor(Class),
+                          label = scales::percent(prop.table(stat(count))))) +
+    geom_bar(position = "dodge") + 
+    geom_text(stat = 'count',
+              position = position_dodge(.9), 
+              vjust = -0.5, 
+              size = 3) + 
+    scale_x_discrete(labels = c("no fraud", "fraud"))+
+    scale_y_continuous(labels = scales::percent)+
+    labs(x = 'Class', y = 'Percentage') +
+    ggtitle("Distribution of class labels") +
+    theme
+    
+#--------
+correlations <- cor(df[,-1],method="pearson")
+corrplot(correlations, number.cex = .9,method = "circle",  type = "full", tl.cex=0.8,tl.col = "red")
+#-------
+# Use 10% of data to compute t-SNE
+tsne_subset <- 1:as.integer(0.1*nrow(df))
+tsne <- Rtsne(df[tsne_subset,-c(1, 31)], perplexity = 20, theta = 0.5, pca = F, verbose = F, max_iter = 500, check_duplicates = F)
+
+classes <- as.factor(df$Class[tsne_subset])
+tsne_mat <- as.data.frame(tsne$Y)
+ggplot(tsne_mat, aes(x = V1, y = V2)) + geom_point(aes(color = classes)) + theme_minimal() + common_theme + ggtitle("t-SNE visualisation of transactions") + scale_color_manual(values = c("#E69F00", "#56B4E9"))
+
+#Remove 'Time' variable
+df <- df[,-1]
+#------
+#Change 'Class' variable to factor
+df$Class <- as.factor(df$Class)
+levels(df$Class) <- c("Not_Fraud", "Fraud")
+
+#Scale numeric variables
+
+df[,-30] <- scale(df[,-30])
+
+head(df)
+#------
+set.seed(123)
+split <- sample.split(df$Class, SplitRatio = 0.7)
+train <-  subset(df, split == TRUE)
+test <- subset(df, split == FALSE)
+
+#--------
+table(train$Class)
+#------
+#logistic regression with downfit sampling
+set.seed(9560)
+down_train <- downSample(x = train[, -ncol(train)],
+                         y = train$Class)
+table(down_train$Class)  
+
+down_fit <- glm(Class ~ .,family = "binomial" ,data = down_train)
+summary(down_fit,)
+
+pred_down <- predict(down_fit, newdata = test)
+print('Fitting downsampled model to test data')
+
+roc.curve(test$Class, pred_down, plotit = TRUE)
+######################################################
+######################################################
+#logistic regression with Smote sampling
+set.seed(9560)
+smote_train <- SMOTE(Class ~ ., data  = train)
+
+table(smote_train$Class)  
+
+smote_fit <- glm(Class ~ .,family = "binomial" ,data = smote_train)
+summary(smote_fit)
+
+pred_smote <- predict(smote_fit, newdata = test)
+print('Fitting smote model to test data')
+
+roc.curve(test$Class, pred_smote, plotit = TRUE)
+
+
+
+
+
+
+
