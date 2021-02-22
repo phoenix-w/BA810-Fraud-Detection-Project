@@ -1,49 +1,45 @@
 library(data.table)
-library("solitude")
+library("solitude") # need to install
 library(dplyr)
+library(caret)
 
-dd <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
+credit_card_raw <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
 
 
 # Create train and test dataset
-dd[, test:=0]
-dd[sample(nrow(dd), 142403), test:=1]
-dd.test <- dd[test==1]
-dd.train <- dd[test==0]
-dd.train[, "test" := NULL]
-dd.test[, "test" := NULL]
+credit_card_raw[, test:=0]
+credit_card_raw[, "Time":= NULL]
+credit_card_raw[sample(nrow(credit_card_raw), 284807*0.2), test:=1]
+test <- credit_card_raw[test==1]
+train <- credit_card_raw[test==0]
+train[, "test" := NULL]
+test[, "test" := NULL]
+credit_card_raw[, "test" := NULL]
 
-# Dataset to feed to iforest
-for.test <- copy(dd.test)
-for.train <- copy(dd.train)
-for.train[, c("Time", "Class") := NULL]
-for.test[, c("Time", "Class") := NULL]
-
+# Copy new data as to not disturb other models
+iforest_train <- copy(train)
+iforest_test <- copy(test)
 
 # initiate an isolation forest
-iso <- isolationForest$new(sample_size = length(for.train))
+iso <- isolationForest$new(sample_size = length(iforest_train))
 # fit for data
-iso$fit(for.train)
+iso$fit(iforest_train)
 
 
+# Obtain anomaly scores (According to documentation: "If the score is closer to 1 for a some observations, they are likely outliers. If the score for all observations hover around 0.5, there might not be outliers at all.")
+iforest_scores_train = iso$predict(iforest_train)
+iforest_scores_train[order(anomaly_score, decreasing = TRUE)]
+iforest_train$outliers <- as.factor(ifelse(iforest_scores_train$anomaly_score >=0.60, "outlier", "normal"))
 
-
-# Obtain anomaly scores
-scores_train = iso$predict(for.train)
-scores_train[order(anomaly_score, decreasing = TRUE)]
-dd.train$outlier <- as.factor(ifelse(scores_train$anomaly_score >=0.60, "outlier", "normal"))
-
-scores_unseen = iso$predict(for.test)
-scores_unseen[order(anomaly_score, decreasing = TRUE)]
-dd.test$outlier <- as.factor(ifelse(scores_unseen$anomaly_score >=0.60, "outlier", "normal"))
-
-
+iforest_scores_test = iso$predict(iforest_test)
+iforest_scores_test[order(anomaly_score, decreasing = TRUE)]
+iforest_test$outliers <- as.factor(ifelse(iforest_scores_test$anomaly_score >=0.60, "outlier", "normal"))
 
 
 # Train dataset True Positive and True Negative
-train.fraud.accuracy <- sum(dd.train$Class[dd.train$outlier == "outlier"])/sum(dd.train$Class)
-train.real.accuracy <- length(dd.train$Class[dd.train$Class == 0 & dd.train$outlier == "normal"])/sum(dd.train$Class == 0)
+train.fraud.accuracy <- sum(iforest_train$Class[iforest_train$outliers == "outlier"])/sum(iforest_train$Class)
+train.real.accuracy <- length(iforest_train$Class[iforest_train$Class == 0 & iforest_train$outlier == "normal"])/sum(iforest_train$Class == 0)
 
 # Test dataset True Positive and True Negative
-test.fraud.accuracy <- sum(dd.test$Class[dd.test$outlier == "outlier"])/sum(dd.test$Class)
-test.real.accuracy <- length(dd.test$Class[dd.test$Class == 0 & dd.test$outlier == "normal"])/sum(dd.test$Class == 0)
+test.fraud.accuracy <- sum(iforest_test$Class[iforest_test$outlier == "outlier"])/sum(iforest_test$Class)
+test.real.accuracy <- length(iforest_test$Class[iforest_test$Class == 0 & iforest_test$outlier == "normal"])/sum(iforest_test$Class == 0)
