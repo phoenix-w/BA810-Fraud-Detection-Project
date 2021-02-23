@@ -61,24 +61,26 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 
 
 # train XGBoost model
-xgb = xgboost(data=train[,1:29], label=train[,"Class"], objective = "binary:logistic",
+xgb = xgboost(data=data.matrix(downsample.train[,1:29]), 
+              label=as.numeric(downsample.train$Class)-1, 
+              objective = "binary:logistic",
               max.depth = 2, eta = 1, nthread = 2, nrounds = 25)
 
 # measure model performance on training set
-pred = predict(xgb, train[,1:29])
+pred = predict(xgb, data.matrix(downsample.train[,1:29]))
 pred = as.numeric(pred>0.5)
 print(head(pred))
-training_accuracy = mean(pred==train[,"Class"])
+training_accuracy = mean(pred==(as.numeric(downsample.train$Class)-1))
 print(paste("Model accuracy on training set:", training_accuracy))
 
 # make predictions
-predictions = predict(xgb, test[,1:29])
-length(predictions) == dim(test)[1]
+predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
+length(predictions) == dim(downsample.test)[1]
 
 # transform predictions to binary results
 predictions = as.numeric(predictions>0.5)
 print(head(predictions))
 
 # measure model performance on test set
-test_accuracy = mean(predictions==test[,"Class"])
+test_accuracy = mean(predictions==(as.numeric(downsample.test$Class)-1))
 print(paste("Model accuracy on test set:", test_accuracy))
