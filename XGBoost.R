@@ -32,10 +32,13 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 
 
 # Fit XGBoost model
-xgb = xgboost(data=data.matrix(downsample.train[,1:29]), 
-              label=as.numeric(downsample.train$Class)-1, 
-              objective = "binary:logistic",
-              max.depth = 2, eta = 1, nthread = 2, nrounds = 25)
+xgb = xgboost(data=data.matrix(downsample.train[,1:29])
+              ,label=as.numeric(downsample.train$Class)-1
+              ,objective = "binary:logistic"
+              ,max.depth = 2
+              ,eta = 1
+              ,nthread = 2
+              ,nrounds = 25)
 
 # Measure model performance on training set
 pred = predict(xgb, data.matrix(downsample.train[,1:29]))
@@ -63,10 +66,14 @@ df$Class = factor(df$Class)
 downsample.df = downSample(df[,-ncol(df)], df$Class)
 
 # XGBoost with cross-validation
-xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29]),
-                label=as.numeric(downsample.df$Class)-1,
-                objective = "binary:logistic",
-                max.depth = 3, eta = 1, nthread = 2, nrounds = 4,
-                nfold = 5, metrics=list("rmse","auc"))
+xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29])
+                ,label=as.numeric(downsample.df$Class)-1
+                ,objective = "binary:logistic"
+                ,max.depth = 3
+                ,eta = 1
+                ,nthread = 2
+                ,nrounds = 4
+                ,nfold = 5
+                ,metrics=list("rmse","auc"))
 
 print(xgb_cv)
