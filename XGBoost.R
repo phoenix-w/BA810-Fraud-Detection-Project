@@ -53,8 +53,9 @@ confusionMatrix(as.factor(pred), downsample.train$Class
 # Plot ROC curve
 pred_roc = prediction(pred, as.numeric(downsample.train$Class)-1)
 roc_train = performance(pred_roc, "tpr", "fpr")
-par(mar=c(1,1,1,1))
-plot(roc_train, lwd=3)
+par(mar=c(4,4,4,4))
+plot(roc_train, lwd=3, main="ROC Curve (Training Set)"
+     ,xlab="False Positive Rate", ylab="True Positive Rate")
 
 # Apply XGBoost model on test set
 predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
@@ -71,8 +72,9 @@ confusionMatrix(as.factor(predictions), downsample.test$Class
 # Plot ROC curve
 predictions_roc = prediction(predictions, as.numeric(downsample.test$Class)-1)
 roc_test = performance(predictions_roc, "tpr", "fpr")
-par(mar=c(1,1,1,1))
-plot(roc_test, lwd=3)
+par(mar=c(4,4,4,4))
+plot(roc_test, lwd=3, main="ROC Curve (Test Set)"
+     ,xlab="False Positive Rate", ylab="True Positive Rate")
 
 
 # Apply XGBoost model on raw dataset
@@ -90,8 +92,9 @@ confusionMatrix(as.factor(yhat), as.factor(credit_card_raw$Class)
 # Plot ROC curve
 yhat_roc = prediction(yhat, credit_card_raw$Class)
 roc_raw = performance(yhat_roc, "tpr", "fpr")
-par(mar=c(1,1,1,1))
-plot(roc_raw, lwd=3)
+par(mar=c(4,4,4,4))
+plot(roc_raw, lwd=3, main="ROC Curve (Raw Dataset)"
+     ,xlab="False Positive Rate", ylab="True Positive Rate")
 
 
 # Downsample the raw dataset: 492 frauds & 492 non-frauds
