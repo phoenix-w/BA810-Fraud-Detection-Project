@@ -42,6 +42,32 @@ test$Class <- factor(test$Class)
 downsample.test <- downSample(test[, -ncol(test)], test$Class)
 ```
 
+## Logistic Regression
+```{r}
+
+
+```
+
+## Decision Tree
+```{r}
+
+
+```
+
+## Random Forest
+```{r}
+
+
+```
+
+## XGBoost
+```{r}
+
+
+```
+
+
+
 
 
 
