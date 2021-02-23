@@ -5,7 +5,7 @@ library(ggplot2)
 library(caret)
 library(ROCR)
 #load data
-setwd("~/Desktop/")
+setwd("~/Documents/BA810")
 credit_card_raw <- fread(file = "creditcard.csv")
 #get structure
 str(credit_card_raw)
@@ -45,21 +45,21 @@ fit_rndfor <- randomForest(downsample.train$Class~., data=downsample.train, ntre
 varImpPlot(fit_rndfor)
 
 #make predictions 
-pd <- predict(fit_rndfor, train[,-ncol(train)])
-table(observed = train[,ncol(train)], predicted = pd)
+pd <- predict(fit_rndfor, downsample.train[,-ncol(downsample.train)])
+table(observed = downsample.train[,ncol(downsample.train)], predicted = pd)
 
-pd.test <- predict(fit_rndfor, test[,-ncol(test)])
-table(observed = test[,ncol(test)], predicted = pd.test)
+pd.test <- predict(fit_rndfor, downsample.test[,-ncol(downsample.test)])
+table(observed = downsample.test[,ncol(downsample.test)], predicted = pd.test)
 
 #ROC curve
-prediction_for_roc_curve <- predict(fit_rndfor,test[,-ncol(test)],type="prob")
+prediction_for_roc_curve <- predict(fit_rndfor,downsample.test[,-ncol(downsample.test)],type="prob")
 pretty_colours <- c("#F8766D","#00BA38")
 classes <- levels(test$Class)
 
 for (i in 1:2)
 {
   # Define which observations belong to class[i]
-  true_values <- ifelse(test[,ncol(test)]==classes[i],1,0)
+  true_values <- ifelse(downsample.test[,ncol(downsample.test)]==classes[i],1,0)
   # Assess the performance of classifier for class[i]
   pred <- prediction(prediction_for_roc_curve[,i],true_values)
   perf <- performance(pred, "tpr", "fpr")
@@ -76,7 +76,11 @@ for (i in 1:2)
   print(auc.perf@y.values)
 }
 
-#feature engineering - cross validation 
-tst <- rfcv(trainx = test[,-ncol(test)], trainy = test[,ncol(test)], scale = "log")
-tst$error.cv
+#cross validation 
+rf.cv <- rfcv(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], cv.fold = 10) 
+with(rf.cv, plot(n.var,error.cv))
+
+#tuning parameter
+bestmtry <- tuneRF(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], stepFactor=1.5, improve=1e-5, ntree=500)
+print(bestmtry) #mtry = 4 gives an accuracy of 94%; mtry: Number of variables randomly sampled as candidates at each split.
 
