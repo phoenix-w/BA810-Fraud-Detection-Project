@@ -44,28 +44,52 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 
 ## Logistic Regression
 ```{r}
-
+# Fit logistic regression model
 
 ```
 
 ## Decision Tree
 ```{r}
-
+# Fit decision tree model
 
 ```
 
 ## Random Forest
 ```{r}
-
+# Fit random forest model
 
 ```
 
 ## XGBoost
 ```{r}
+# Fit XGBoost model
+xgb = xgboost(data=data.matrix(downsample.train[,1:29])
+              ,label=as.numeric(downsample.train$Class)-1
+              ,objective = "binary:logistic"
+              ,max.depth = 2
+              ,eta = 1
+              ,nthread = 2
+              ,nrounds = 25)
 
+# Measure model performance on training set
+pred = predict(xgb, data.matrix(downsample.train[,1:29]))
+pred = as.numeric(pred>0.5)
+print(head(pred))
+training_accuracy = mean(pred==(as.numeric(downsample.train$Class)-1))
+print(paste("Model accuracy on training set:", training_accuracy))
 
+# Make predictions
+predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
+length(predictions) == dim(downsample.test)[1]
+
+# Transform predictions to binary results
+predictions = as.numeric(predictions>0.5)
+print(head(predictions))
+
+# Measure model performance on test set
+test_accuracy = mean(predictions==(as.numeric(downsample.test$Class)-1))
+print(paste("Model accuracy on test set:", test_accuracy))
 ```
-
 
 
 

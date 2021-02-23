@@ -228,6 +228,75 @@ downsample.train &lt;- downSample(train[, -ncol(train)], train$Class)
 test$Class &lt;- factor(test$Class)
 downsample.test &lt;- downSample(test[, -ncol(test)], test$Class)</code></pre>
 </div>
+<div id="logistic-regression" class="section level2">
+<h2>Logistic Regression</h2>
+<pre class="r"><code># Fit logistic regression model</code></pre>
+</div>
+<div id="decision-tree" class="section level2">
+<h2>Decision Tree</h2>
+<pre class="r"><code># Fit decision tree model</code></pre>
+</div>
+<div id="random-forest" class="section level2">
+<h2>Random Forest</h2>
+<pre class="r"><code># Fit random forest model</code></pre>
+</div>
+<div id="xgboost" class="section level2">
+<h2>XGBoost</h2>
+<pre class="r"><code># Fit XGBoost model
+xgb = xgboost(data=data.matrix(downsample.train[,1:29])
+              ,label=as.numeric(downsample.train$Class)-1
+              ,objective = &quot;binary:logistic&quot;
+              ,max.depth = 2
+              ,eta = 1
+              ,nthread = 2
+              ,nrounds = 25)</code></pre>
+<pre><code>## [16:15:39] WARNING: amalgamation/../src/learner.cc:1061: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective &#39;binary:logistic&#39; was changed from &#39;error&#39; to &#39;logloss&#39;. Explicitly set eval_metric if you&#39;d like to restore the old behavior.
+## [1]  train-logloss:0.269472 
+## [2]  train-logloss:0.196702 
+## [3]  train-logloss:0.166742 
+## [4]  train-logloss:0.150169 
+## [5]  train-logloss:0.136436 
+## [6]  train-logloss:0.122327 
+## [7]  train-logloss:0.109018 
+## [8]  train-logloss:0.101301 
+## [9]  train-logloss:0.090295 
+## [10] train-logloss:0.083138 
+## [11] train-logloss:0.075752 
+## [12] train-logloss:0.069084 
+## [13] train-logloss:0.061978 
+## [14] train-logloss:0.056901 
+## [15] train-logloss:0.051978 
+## [16] train-logloss:0.047814 
+## [17] train-logloss:0.044253 
+## [18] train-logloss:0.041368 
+## [19] train-logloss:0.038649 
+## [20] train-logloss:0.035796 
+## [21] train-logloss:0.033152 
+## [22] train-logloss:0.030740 
+## [23] train-logloss:0.028226 
+## [24] train-logloss:0.025899 
+## [25] train-logloss:0.023737</code></pre>
+<pre class="r"><code># Measure model performance on training set
+pred = predict(xgb, data.matrix(downsample.train[,1:29]))
+pred = as.numeric(pred&gt;0.5)
+print(head(pred))</code></pre>
+<pre><code>## [1] 0 0 0 0 0 0</code></pre>
+<pre class="r"><code>training_accuracy = mean(pred==(as.numeric(downsample.train$Class)-1))
+print(paste(&quot;Model accuracy on training set:&quot;, training_accuracy))</code></pre>
+<pre><code>## [1] &quot;Model accuracy on training set: 0.997549019607843&quot;</code></pre>
+<pre class="r"><code># Make predictions
+predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
+length(predictions) == dim(downsample.test)[1]</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># Transform predictions to binary results
+predictions = as.numeric(predictions&gt;0.5)
+print(head(predictions))</code></pre>
+<pre><code>## [1] 0 0 0 0 0 0</code></pre>
+<pre class="r"><code># Measure model performance on test set
+test_accuracy = mean(predictions==(as.numeric(downsample.test$Class)-1))
+print(paste(&quot;Model accuracy on test set:&quot;, test_accuracy))</code></pre>
+<pre><code>## [1] &quot;Model accuracy on test set: 0.958333333333333&quot;</code></pre>
+</div>
 
 
 
