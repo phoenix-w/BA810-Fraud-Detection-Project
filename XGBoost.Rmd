@@ -1,6 +1,12 @@
-# XGBoost R Tutorial
-# https://xgboost.readthedocs.io/en/latest/R-package/xgboostPresentation.html#
+---
+title: "XGBoost"
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
 library(data.table)
 library(caTools)
 library(xgboost)
@@ -40,7 +46,9 @@ xgb = xgboost(data=data.matrix(downsample.train[,1:29])
               ,eta = 1
               ,nthread = 2
               ,nrounds = 25)
+```
 
+```{r}
 # Measure model performance on training set
 pred = predict(xgb, data.matrix(downsample.train[,1:29]))
 pred = as.numeric(pred>0.5)
@@ -53,10 +61,12 @@ confusionMatrix(as.factor(pred), downsample.train$Class
 # Plot ROC curve
 pred_roc = prediction(pred, as.numeric(downsample.train$Class)-1)
 roc_train = performance(pred_roc, "tpr", "fpr")
-par(mar=c(4,4,4,4))
+
 plot(roc_train, lwd=3, main="ROC Curve (Training Set)"
      ,xlab="False Positive Rate", ylab="True Positive Rate")
+```
 
+```{r}
 # Apply XGBoost model on test set
 predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
 length(predictions) == dim(downsample.test)[1]
@@ -72,11 +82,12 @@ confusionMatrix(as.factor(predictions), downsample.test$Class
 # Plot ROC curve
 predictions_roc = prediction(predictions, as.numeric(downsample.test$Class)-1)
 roc_test = performance(predictions_roc, "tpr", "fpr")
-par(mar=c(4,4,4,4))
+
 plot(roc_test, lwd=3, main="ROC Curve (Test Set)"
      ,xlab="False Positive Rate", ylab="True Positive Rate")
+```
 
-
+```{r}
 # Apply XGBoost model on raw dataset
 yhat = predict(xgb, data.matrix(credit_card_raw[,1:29]))
 length(yhat) == dim(credit_card_raw)[1]
@@ -92,11 +103,12 @@ confusionMatrix(as.factor(yhat), as.factor(credit_card_raw$Class)
 # Plot ROC curve
 yhat_roc = prediction(yhat, credit_card_raw$Class)
 roc_raw = performance(yhat_roc, "tpr", "fpr")
-par(mar=c(4,4,4,4))
+
 plot(roc_raw, lwd=3, main="ROC Curve (Raw Dataset)"
      ,xlab="False Positive Rate", ylab="True Positive Rate")
+```
 
-
+```{r}
 # Downsample the raw dataset: 492 frauds & 492 non-frauds
 df = setDF(credit_card_raw)
 df$Class = factor(df$Class)
@@ -112,4 +124,7 @@ xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29])
                 ,nfold = 5
                 ,metrics=list("rmse","auc"))
 print(xgb_cv)
+```
+
+
 
