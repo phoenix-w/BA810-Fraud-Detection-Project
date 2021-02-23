@@ -5,6 +5,7 @@ library(data.table)
 library(caTools)
 library(xgboost)
 library(caret)
+library(ROCR)
 
 credit_card_raw = fread("creditcard.csv")
 
@@ -49,8 +50,13 @@ print(paste("Model accuracy on training set:", training_accuracy))
 # Confusion matrix for training set
 confusionMatrix(as.factor(pred), downsample.train$Class
                 ,dnn=c("Prediction", "Reference"))
+# Plot ROC curve
+pred_roc = prediction(pred, as.numeric(downsample.train$Class)-1)
+roc_train = performance(pred_roc, "tpr", "fpr")
+par(mar=c(1,1,1,1))
+plot(roc_train, lwd=3)
 
-# Make predictions
+# Apply XGBoost model on test set
 predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
 length(predictions) == dim(downsample.test)[1]
 # Transform predictions to binary results
@@ -62,6 +68,11 @@ print(paste("Model accuracy on test set:", test_accuracy))
 # Confusion matrix for test set
 confusionMatrix(as.factor(predictions), downsample.test$Class
                 ,dnn=c("Prediction", "Reference"))
+# Plot ROC curve
+predictions_roc = prediction(predictions, as.numeric(downsample.test$Class)-1)
+roc_test = performance(predictions_roc, "tpr", "fpr")
+par(mar=c(1,1,1,1))
+plot(roc_test, lwd=3)
 
 
 # Apply XGBoost model on raw dataset
@@ -76,13 +87,17 @@ print(paste("Model accuracy on raw data:", raw_accuracy))
 # Confusion matrix
 confusionMatrix(as.factor(yhat), as.factor(credit_card_raw$Class)
                 ,dnn=c("Prediction", "Reference"))
+# Plot ROC curve
+yhat_roc = prediction(yhat, credit_card_raw$Class)
+roc_raw = performance(yhat_roc, "tpr", "fpr")
+par(mar=c(1,1,1,1))
+plot(roc_raw, lwd=3)
 
 
 # Downsample the raw dataset: 492 frauds & 492 non-frauds
 df = setDF(credit_card_raw)
 df$Class = factor(df$Class)
 downsample.df = downSample(df[,-ncol(df)], df$Class)
-
 # XGBoost with cross-validation
 xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29])
                 ,label=as.numeric(downsample.df$Class)-1
@@ -93,5 +108,5 @@ xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29])
                 ,nrounds = 4
                 ,nfold = 5
                 ,metrics=list("rmse","auc"))
-
 print(xgb_cv)
+
