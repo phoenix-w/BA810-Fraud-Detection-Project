@@ -46,18 +46,36 @@ pred = as.numeric(pred>0.5)
 print(head(pred))
 training_accuracy = mean(pred==(as.numeric(downsample.train$Class)-1))
 print(paste("Model accuracy on training set:", training_accuracy))
+# Confusion matrix for training set
+confusionMatrix(as.factor(pred), downsample.train$Class
+                ,dnn=c("Prediction", "Reference"))
 
 # Make predictions
 predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
 length(predictions) == dim(downsample.test)[1]
-
 # Transform predictions to binary results
 predictions = as.numeric(predictions>0.5)
 print(head(predictions))
-
 # Measure model performance on test set
 test_accuracy = mean(predictions==(as.numeric(downsample.test$Class)-1))
 print(paste("Model accuracy on test set:", test_accuracy))
+# Confusion matrix for test set
+confusionMatrix(as.factor(predictions), downsample.test$Class
+                ,dnn=c("Prediction", "Reference"))
+
+
+# Apply XGBoost model on raw dataset
+yhat = predict(xgb, data.matrix(credit_card_raw[,1:29]))
+length(yhat) == dim(credit_card_raw)[1]
+# Transform predictions to binary results
+yhat = as.numeric(yhat>0.5)
+print(head(yhat))
+# Measure model performance
+raw_accuracy = mean(yhat==credit_card_raw$Class)
+print(paste("Model accuracy on raw data:", raw_accuracy))
+# Confusion matrix
+confusionMatrix(as.factor(yhat), as.factor(credit_card_raw$Class)
+                ,dnn=c("Prediction", "Reference"))
 
 
 # Downsample the raw dataset: 492 frauds & 492 non-frauds
