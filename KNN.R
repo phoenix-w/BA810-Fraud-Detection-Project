@@ -2,39 +2,49 @@ library(data.table)
 library(caret)
 
 
-dd <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
+credit_card_raw <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
 
 
 # Create train and test dataset
-dd[, test:=0]
-dd[sample(nrow(dd), 284807*0.2), test:=1]
-dd.test <- dd[test==1]
-dd.train <- dd[test==0]
-dd.train[, "test" := NULL]
-dd.test[, "test" := NULL]
+credit_card_raw[, test:=0]
+credit_card_raw[, "Time":= NULL]
+credit_card_raw[sample(nrow(credit_card_raw), 284807*0.2), test:=1]
+test <- credit_card_raw[test==1]
+train <- credit_card_raw[test==0]
+train[, "test" := NULL]
+test[, "test" := NULL]
+credit_card_raw[, "test" := NULL]
 
-# Convert datatables to dataframes 
-setDF(dd.train)
-setDF(dd.test)
+# Convert datatables to dataframes for downsampling
+setDF(train)
+setDF(test)
 
-# Downsample (upsample is computationally expensive)
+# Downsample
 set.seed(1)
-dd.train$Class <- factor(dd.train$Class)
-dd.test$Class <- factor(dd.test$Class)
-for.train <- downSample(dd.train[, -ncol(dd.train)], 
-                      dd.train$Class)
-for.test <- downSample(dd.test[, -ncol(dd.test)],
-                       dd.test$Class)
+train$Class <- factor(train$Class)
+downsample.train <- downSample(train[, -ncol(train)], train$Class)
+
+test$Class <- factor(test$Class)
+downsample.test <- downSample(test[, -ncol(test)], test$Class)
+
 
 # Set cross validation parameters
-ctrl <- trainControl(method = "cv", number = 10)
+knn_ctrl <- trainControl(method = "cv", number = 5)
 
 # Run model
-model <- train(Class ~ ., data = for.train, method = "knn", trControl = ctrl)
-model
+knn_model <- train(Class ~ ., data = downsample.train, method = "knn", trControl = knn_ctrl)
+
 
 # Predict on downsampled test set
-prediction <- predict(model, for.test)
+knn_prediction <- predict(knn_model, downsample.test)
 
 # Confusion matrix
-confusionMatrix(prediction, for.test$Class, positive = "1")
+confusionMatrix(knn_prediction, downsample.test$Class, positive = "1")
+
+# Predict on imbalanced test set 
+prediction.imbalanced <- predict(knn_model, test)
+
+# Confusion matrix
+confusionMatrix(prediction.imbalanced, test$Class, positive = "1")
+
+
