@@ -103,13 +103,54 @@ for (i in 1:2)
   print(auc.perf@y.values)
 }
 
-
 ```
 
 ## Random Forest
 ```{r}
 # Fit random forest model
+fit_rndfor <- randomForest(downsample.train$Class~., data=downsample.train, ntree = 500, importance = TRUE)
 
+varImpPlot(fit_rndfor)
+
+#make predictions 
+pd <- predict(fit_rndfor, downsample.train[,-ncol(downsample.train)])
+table(observed = downsample.train[,ncol(downsample.train)], predicted = pd)
+
+pd.test <- predict(fit_rndfor, downsample.test[,-ncol(downsample.test)])
+table(observed = downsample.test[,ncol(downsample.test)], predicted = pd.test)
+
+#ROC curve
+prediction_for_roc_curve <- predict(fit_rndfor,downsample.test[,-ncol(downsample.test)],type="prob")
+pretty_colours <- c("#F8766D","#00BA38")
+classes <- levels(test$Class)
+
+for (i in 1:2)
+{
+  # Define which observations belong to class[i]
+  true_values <- ifelse(downsample.test[,ncol(downsample.test)]==classes[i],1,0)
+  # Assess the performance of classifier for class[i]
+  pred <- prediction(prediction_for_roc_curve[,i],true_values)
+  perf <- performance(pred, "tpr", "fpr")
+  if (i==1)
+  {
+    plot(perf,main="ROC Curve",col=pretty_colours[i]) 
+  }
+  else
+  {
+    plot(perf,main="ROC Curve",col=pretty_colours[i],add=TRUE) 
+  }
+  # Calculate the AUC and print it to screen
+  auc.perf <- performance(pred, measure = "auc")
+  print(auc.perf@y.values)
+}
+
+#cross validation 
+rf.cv <- rfcv(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], cv.fold = 10) 
+with(rf.cv, plot(n.var,error.cv))
+
+#tuning parameter
+bestmtry <- tuneRF(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], stepFactor=1.5, improve=1e-5, ntree=500)
+print(bestmtry) #mtry = 4 gives an accuracy of 94%; mtry: Number of variables randomly sampled as candidates at each split.
 ```
 
 ## XGBoost
