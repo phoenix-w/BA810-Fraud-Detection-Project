@@ -202,6 +202,37 @@ xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29])
 print(xgb_cv)
 ```
 
+## KNN
+```{r}
+# Set cross validation parameters
+knn_ctrl <- trainControl(method = "cv", number = 5)
+
+# Run model
+knn_model <- train(Class ~ ., data = downsample.train, method = "knn", trControl = knn_ctrl)
+```
+```{r}
+# Predict on downsampled test set
+knn_prediction <- predict(knn_model, downsample.test)
+
+# Confusion matrix
+confusionMatrix(knn_prediction, downsample.test$Class, positive = "1")
+
+#ROC curve on downsampled test data
+roc.curve(downsample.test$Class, knn_prediction, plotit = TRUE)
+```
+```{r}
+# Predict on imbalanced test set 
+prediction.imbalanced <- predict(knn_model, test)
+
+# Confusion matrix
+confusionMatrix(prediction.imbalanced, test$Class, positive = "1")
+
+#ROC curve on imbalanced test data
+knn_prediction_imbalanced <- predict(knn_model, test)
+roc.curve(test$Class, prediction.imbalanced, plotit = TRUE)
+```
+
+
 
 
 
