@@ -18,6 +18,8 @@ library(pROC)
 library(ROSE)
 library(randomForest)
 library(ggplot2)
+library(dplyr)
+library("solitude")
 
 credit_card_raw = fread("creditcard.csv")
 ```
@@ -232,8 +234,39 @@ knn_prediction_imbalanced <- predict(knn_model, test)
 roc.curve(test$Class, prediction.imbalanced, plotit = TRUE)
 ```
 
+## Isolation Forest
+```{r}
+# Copy new data as to not disturb other models
+iforest_train <- copy(train)
+iforest_test <- copy(test)
+```
+```{r}
+# initiate an isolation forest
+iso <- isolationForest$new(sample_size = length(iforest_train))
+# fit for data
+iso$fit(iforest_train)
+```
+```{r}
+# Obtain anomaly scores. Scores closer to 1 are likely outliers. 
+# All scores hovering around 0.5 indicate low likelihood of outliers, so we set the threshold to 0.6.
+iforest_scores_train = iso$predict(iforest_train)
+iforest_scores_train[order(anomaly_score, decreasing = TRUE)]
+iforest_train$predictions <- as.factor(ifelse(iforest_scores_train$anomaly_score >=0.6, 1, 0))
 
-
+iforest_scores_test = iso$predict(iforest_test)
+iforest_scores_test[order(anomaly_score, decreasing = TRUE)]
+iforest_test$predictions <- as.factor(ifelse(iforest_scores_test$anomaly_score >=0.6, 1, 0))
+```
+```{r}
+# Confusion Matrix and ROC curve of training data
+confusionMatrix(iforest_train$predictions, as.factor(train$Class), positive = "1")
+roc.curve(train$Class, iforest_train$predictions, plotit = TRUE)
+```
+```{r}
+# Confusion Matrix and ROC curve of test data
+confusionMatrix(iforest_test$predictions, as.factor(test$Class), positive = "1")
+roc.curve(test$Class, iforest_test$predictions, plotit = TRUE)
+```
 
 
 
