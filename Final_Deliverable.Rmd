@@ -19,7 +19,7 @@ library(ROSE)
 library(randomForest)
 library(ggplot2)
 library(dplyr)
-library("solitude")
+library(solitude)
 
 credit_card_raw = fread("creditcard.csv")
 ```
@@ -245,7 +245,3 @@ roc.curve(train$Class, iforest_train$predictions, plotit = TRUE)
 confusionMatrix(iforest_test$predictions, as.factor(test$Class), positive = "1")
 roc.curve(test$Class, iforest_test$predictions, plotit = TRUE)
 ```
-
-
-
-
