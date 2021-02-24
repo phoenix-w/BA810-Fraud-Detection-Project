@@ -14,8 +14,9 @@ library(caTools)
 library(xgboost)
 library(caret)
 library(ROCR)
+library("pROC")
 
-credit_card_raw = fread("creditcard.csv")
+credit_card_raw = fread("~/Desktop/810supervised/team project/creditcard.csv")
 ```
 
 ## Splitting Data
@@ -46,6 +47,16 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 ## Logistic Regression
 ```{r}
 # Fit logistic regression model
+set.seed(1)
+
+down_fit <- glm(Class ~ .,family = "binomial" ,data = downsample.train)
+summary(down_fit,)
+
+pred_down <- predict(down_fit, newdata = test)
+print('Fitting downsampled model to test data')
+
+#Evaluate model performance on test set
+roc.curve(test$Class, pred_down, plotit = TRUE)
 
 ```
 
