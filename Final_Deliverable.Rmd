@@ -16,7 +16,7 @@ library(caret)
 library(ROCR)
 library("pROC")
 
-credit_card_raw = fread("~/Desktop/810supervised/team project/creditcard.csv")
+credit_card_raw = fread("creditcard.csv")
 ```
 
 ## Splitting Data
