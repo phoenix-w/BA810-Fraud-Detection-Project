@@ -1,7 +1,10 @@
 library(data.table)
+library(caTools)
+library(xgboost)
 library(caret)
-
-
+library(ROCR)
+library("pROC")
+library("ROSE")
 credit_card_raw <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
 
 
@@ -47,4 +50,10 @@ prediction.imbalanced <- predict(knn_model, test)
 # Confusion matrix
 confusionMatrix(prediction.imbalanced, test$Class, positive = "1")
 
+#ROC curve on downsampled test data
+roc.curve(downsample.test$Class, knn_prediction, plotit = TRUE)
+
+#ROC curve on imbalanced test data
+knn_prediction_imbalanced <- predict(knn_model, test)
+roc.curve(test$Class, knn_prediction_imbalanced, plotit = TRUE)
 
