@@ -71,6 +71,7 @@ roc.curve(test$Class, pred_down, plotit=TRUE)
 #apply 5-folds cross validation to find the best parameter cp for decision tree
 ctrl <- trainControl(method = "cv", number = 5)
 
+#use downsample training set to fit model
 dt <- train(Class ~ ., data = downsample.train,
                method = 'rpart',
                trControl = ctrl)
@@ -96,9 +97,34 @@ confusionMatrix(pred.imbalanced, test$Class, positive = '1')
 
 #ROC curve
 roc.curve(test$Class, pred.imbalanced, plotit = TRUE)
-
 ```
 
+
+```{r}
+#use imbalanced training set to fit model
+dt_imbalanced <- train(Class ~ ., data = train,
+               method = 'rpart',
+               trControl = ctrl)
+```
+```{r}
+pred <- predict(dt_imbalanced, downsample.test)
+
+#performance
+confusionMatrix(pred, downsample.test$Class, positive = '1')
+
+#ROC curve
+roc.curve(downsample.test$Class, pred, plotit=TRUE)
+```
+```{r}
+#predict on imbalanced test set
+pred.imbalanced <- predict(dt_imbalanced, test)
+
+#performance
+confusionMatrix(pred.imbalanced, test$Class, positive = '1')
+
+#ROC curve
+roc.curve(test$Class, pred.imbalanced, plotit = TRUE)
+```
 ## Random Forest
 ```{r}
 # Fit random forest model
