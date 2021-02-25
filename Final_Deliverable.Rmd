@@ -139,8 +139,32 @@ table(observed = downsample.train[,ncol(downsample.train)], predicted = pd)
 pd.test <- predict(fit_rndfor, downsample.test[,-ncol(downsample.test)])
 table(observed = downsample.test[,ncol(downsample.test)], predicted = pd.test)
 
+confusionMatrix(pd.test, downsample.test$Class, positive = "1")
+
+pd.test.original <- predict(fit_rndfor, test[,-ncol(test)])
+table(observed = test[,ncol(test)], predicted = pd.test.original)
+
+confusionMatrix(pd.test.original, test$Class, positive = "1")
+
+#Random Forest fit with original dataset
+fit_rndfor_origin <- randomForest(train$Class~., data=train, ntree = 500, importance = TRUE)
+varImpPlot(fit_rndfor_origin)
+
+#make predictions
+pd.test.original2 <- predict(fit_rndfor_origin, test[,-ncol(test)])
+table(observed = test[,ncol(test)], predicted = pd.test.original2)
+
+pd.test.original3 <- predict(fit_rndfor_origin, downsample.test[,-ncol(downsample.test)])
+table(observed = downsample.test[,ncol(downsample.test)], predicted = pd.test.original3)
+
+confusionMatrix(pd.test.original2, test$Class, positive = "1")
+confusionMatrix(pd.test.original3, downsample.test$Class, positive = "1")
+
 #ROC curve and AUC
 roc.curve(downsample.test$Class, pd.test, plotit=TRUE)
+roc.curve(test$Class, pd.test.original, plotit=TRUE)
+roc.curve(test$Class, pd.test.original2, plotit=TRUE)
+roc.curve(downsample.test$Class, pd.test.original3, plotit=TRUE)
 
 #cross validation 
 rf.cv <- rfcv(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], cv.fold = 10) 
