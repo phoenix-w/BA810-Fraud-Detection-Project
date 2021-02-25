@@ -1,6 +1,6 @@
 ---
 title: 'Team 5: Project Deliverable'
-author: "Mohsen Jafari, Jeffrey Leung, Yi-shuan Wang, Ying Wu, Yuzhe Zheng"
+author: "Roozbeh Jafari, Jeffrey Leung, Yi-shuan Wang, Ying Wu, Yuzhe Zheng"
 ---
 
 ```{r setup, include=FALSE}
@@ -54,15 +54,36 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 # Fit logistic regression model
 set.seed(1)
 
+#fit the model on balanced data(downsampling)
 down_fit <- glm(Class ~ .,family = "binomial" ,data = downsample.train)
 summary(down_fit,)
 
-pred_down <- predict(down_fit, newdata = test)
+pred_down <- predict(down_fit, downsample.test) #balanced
 print('Fitting downsampled model to test data')
 
 #Evaluate model performance on test set
-roc.curve(test$Class, pred_down, plotit=TRUE)
+roc.curve(downsample.test$Class, pred_down, plotit=TRUE)
 
+#predict on imbalanced test set
+pred_imbalanced_down <- predict(down_fit, test) #imbalanced
+
+roc.curve(test$Class, pred_imbalanced_down, plotit = TRUE)
+
+###########
+#fit the model on imbalanced data(downsampling)
+org_fit <- glm(Class ~ .,family = "binomial" ,data = train)
+summary(org_fit,)
+
+pred_org <- predict(org_fit, downsample.test)
+print('Fitting imbalanced model to downsample.test data')
+
+#Evaluate model performance on test set
+roc.curve(downsample.test$Class, pred_org, plotit=TRUE)
+
+pred_imbalanced_org <- predict(org_fit, test)
+
+#Evaluate model performance on test set
+roc.curve(test$Class, pred_imbalanced_org, plotit=TRUE)
 ```
 
 ## Decision Tree
