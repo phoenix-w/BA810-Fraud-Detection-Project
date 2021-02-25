@@ -53,7 +53,7 @@ for (iter in 1:10) {
   set.seed(seed.number)
   mdcv <- xgb.cv(data=dtrain, params = param,
                  nfold=cv.nfold, nrounds=cv.nround, verbose=0,
-                 early_stopping_rounds=8, maximize=FALSE,
+                 early_stopping_rounds=8, maximize=TRUE,
                  label=as.numeric(downsample.train$Class)-1)
   
   min_auc = min(mdcv$evaluation_log[, test_auc_mean])
@@ -84,7 +84,7 @@ predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
 predictions = as.numeric(predictions>0.5)
 # Confusion matrix
 cm1 = confusionMatrix(as.factor(predictions), downsample.test$Class
-                ,dnn=c("Prediction", "Reference"))
+                      ,dnn=c("Prediction", "Reference"))
 print(cm1)
 # Plot ROC curve
 roc1 = roc.curve(downsample.test$Class, as.factor(predictions), plotit = TRUE)
@@ -96,7 +96,7 @@ predictions2 = predict(xgb, data.matrix(test[,1:29]))
 predictions2 = as.numeric(predictions2>0.5)
 # Confusion matrix
 cm2 = confusionMatrix(as.factor(predictions2), test$Class
-                ,dnn=c("Prediction", "Reference"))
+                      ,dnn=c("Prediction", "Reference"))
 print(cm2)
 # Plot ROC curve
 roc2 = roc.curve(test$Class, as.factor(predictions2), plotit = TRUE)
@@ -104,7 +104,7 @@ print(paste("Area under the curve (AUC):", round(roc2$auc, digits=3)))
 
 
 ###=============================================================###
-# Cross-validation (imbalanced train)
+# Cross-validation (imbalanced training set)
 dtrain2 = data.matrix(train[,1:29])
 best_param2 = list()
 best_seednumber2 = 1234
@@ -121,7 +121,7 @@ for (iter in 1:10) {
   set.seed(seed.number)
   mdcv <- xgb.cv(data=dtrain2, params = param,
                  nfold=cv.nfold, nrounds=cv.nround, verbose=0,
-                 early_stopping_rounds=8, maximize=FALSE,
+                 early_stopping_rounds=8, maximize=TRUE,
                  label=as.numeric(train$Class)-1)
   
   min_auc = min(mdcv$evaluation_log[, test_auc_mean])
@@ -164,7 +164,7 @@ pred2 = predict(xgb2, data.matrix(test[,1:29]))
 pred2 = as.numeric(pred2>0.5)
 # Confusion matrix
 cm4 = confusionMatrix(as.factor(pred2), test$Class
-                     ,dnn=c("Prediction", "Reference"))
+                      ,dnn=c("Prediction", "Reference"))
 print(cm4)
 # Plot ROC curve
 roc4 = roc.curve(test$Class, as.factor(pred2), plotit = TRUE)
@@ -179,29 +179,29 @@ print(paste("Sensitivity:"
             , cm1$byClass["Specificity"]
             , " AUC:"
             , round(roc1$auc, digits=3)
-            , "(fit on downsampled training set & used on downsampled test set)"
-            ))
+            , "(downsampled training & downsampled test)"
+))
 print(paste("Sensitivity:"
             , cm2$byClass["Sensitivity"]
             ,"Specificity:"
             , cm2$byClass["Specificity"]
             , " AUC:"
             , round(roc2$auc, digits=3)
-            ,"(fit on downsampled training set & used on imbalanced test set)"
-            ))
+            ,"(downsampled training & imbalanced test)"
+))
 print(paste("Sensitivity:"
             , cm3$byClass["Sensitivity"]
             ,"Specificity:"
             , cm3$byClass["Specificity"]
             , " AUC:"
             , round(roc3$auc, digits=3)
-            ,"(fit on imbalanced training set & used on downsampled test set)"
-            ))
+            ,"(imbalanced training & downsampled test)"
+))
 print(paste("Sensitivity:"
             , cm4$byClass["Sensitivity"]
             ,"Specificity:"
             , cm4$byClass["Specificity"]
             , " AUC:"
             , round(roc4$auc, digits=3)
-            ,"(fit on imbalanced training set & used on imbalanced test set)"
-            ))
+            ,"(imbalanced training & imbalanced test)"
+))
