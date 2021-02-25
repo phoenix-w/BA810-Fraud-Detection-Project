@@ -12,6 +12,10 @@ library(caTools)
 library(xgboost)
 library(caret)
 library(ROCR)
+library(pROC)
+library(ROSE)
+library(randomForest)
+library(ggplot2)
 
 credit_card_raw = fread("creditcard.csv")
 
@@ -37,94 +41,176 @@ downsample.train <- downSample(train[, -ncol(train)], train$Class)
 test$Class <- factor(test$Class)
 downsample.test <- downSample(test[, -ncol(test)], test$Class)
 
+###=============================================================###
+# Cross-validation (downsample.train)
+dtrain = data.matrix(downsample.train[,1:29])
+best_param = list()
+best_seednumber = 1234
+best_auc = Inf
+best_auc_index = 0
 
-# Fit XGBoost model
-xgb = xgboost(data=data.matrix(downsample.train[,1:29])
-              ,label=as.numeric(downsample.train$Class)-1
-              ,objective = "binary:logistic"
-              ,max.depth = 2
-              ,eta = 1
-              ,nthread = 2
-              ,nrounds = 25)
-```
+for (iter in 1:10) {
+  param <- list(objective = "binary:logistic", eval_metric = "auc",
+                max_depth = 2, eta = 1, nthread = 2
+  )
+  cv.nround = 1000
+  cv.nfold = 5
+  seed.number = sample.int(10000, 1)[[1]]
+  set.seed(seed.number)
+  mdcv <- xgb.cv(data=dtrain, params = param,
+                 nfold=cv.nfold, nrounds=cv.nround, verbose=0,
+                 early_stopping_rounds=8, maximize=FALSE,
+                 label=as.numeric(downsample.train$Class)-1)
+  
+  min_auc = min(mdcv$evaluation_log[, test_auc_mean])
+  min_auc_index = which.min(mdcv$evaluation_log[, test_auc_mean])
+  
+  if (min_auc < best_auc) {
+    best_auc = min_auc
+    best_auc_index = min_auc_index
+    best_seednumber = seed.number
+    best_param = param
+  }
+}
 
-```{r}
-# Measure model performance on training set
-pred = predict(xgb, data.matrix(downsample.train[,1:29]))
-pred = as.numeric(pred>0.5)
-print(head(pred))
-training_accuracy = mean(pred==(as.numeric(downsample.train$Class)-1))
-print(paste("Model accuracy on training set:", training_accuracy))
-# Confusion matrix for training set
-confusionMatrix(as.factor(pred), downsample.train$Class
-                ,dnn=c("Prediction", "Reference"))
-# Plot ROC curve
-pred_roc = prediction(pred, as.numeric(downsample.train$Class)-1)
-roc_train = performance(pred_roc, "tpr", "fpr")
+nround = best_auc
+set.seed(best_seednumber)
 
-plot(roc_train, lwd=3, main="ROC Curve (Training Set)"
-     ,xlab="False Positive Rate", ylab="True Positive Rate")
-```
 
-```{r}
-# Apply XGBoost model on test set
+###=============================================================###
+# Fit XGBoost model on downsampled training set
+xgb = xgboost(data = dtrain,
+              params = best_param, 
+              nround = nround, 
+              label=as.numeric(downsample.train$Class)-1)
+
+# Apply XGBoost model on downsampled test set
 predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
-length(predictions) == dim(downsample.test)[1]
 # Transform predictions to binary results
 predictions = as.numeric(predictions>0.5)
-print(head(predictions))
-# Measure model performance on test set
-test_accuracy = mean(predictions==(as.numeric(downsample.test$Class)-1))
-print(paste("Model accuracy on test set:", test_accuracy))
-# Confusion matrix for test set
-confusionMatrix(as.factor(predictions), downsample.test$Class
-                ,dnn=c("Prediction", "Reference"))
-# Plot ROC curve
-predictions_roc = prediction(predictions, as.numeric(downsample.test$Class)-1)
-roc_test = performance(predictions_roc, "tpr", "fpr")
-
-plot(roc_test, lwd=3, main="ROC Curve (Test Set)"
-     ,xlab="False Positive Rate", ylab="True Positive Rate")
-```
-
-```{r}
-# Apply XGBoost model on raw dataset
-yhat = predict(xgb, data.matrix(credit_card_raw[,1:29]))
-length(yhat) == dim(credit_card_raw)[1]
-# Transform predictions to binary results
-yhat = as.numeric(yhat>0.5)
-print(head(yhat))
-# Measure model performance
-raw_accuracy = mean(yhat==credit_card_raw$Class)
-print(paste("Model accuracy on raw data:", raw_accuracy))
 # Confusion matrix
-confusionMatrix(as.factor(yhat), as.factor(credit_card_raw$Class)
+cm1 = confusionMatrix(as.factor(predictions), downsample.test$Class
                 ,dnn=c("Prediction", "Reference"))
+print(cm1)
 # Plot ROC curve
-yhat_roc = prediction(yhat, credit_card_raw$Class)
-roc_raw = performance(yhat_roc, "tpr", "fpr")
+roc1 = roc.curve(downsample.test$Class, as.factor(predictions), plotit = TRUE)
+print(paste("Area under the curve (AUC):", round(roc1$auc, digits=3)))
 
-plot(roc_raw, lwd=3, main="ROC Curve (Raw Dataset)"
-     ,xlab="False Positive Rate", ylab="True Positive Rate")
+
+# Apply XGBoost model on imbalanced test set
+predictions2 = predict(xgb, data.matrix(test[,1:29]))
+predictions2 = as.numeric(predictions2>0.5)
+# Confusion matrix
+cm2 = confusionMatrix(as.factor(predictions2), test$Class
+                ,dnn=c("Prediction", "Reference"))
+print(cm2)
+# Plot ROC curve
+roc2 = roc.curve(test$Class, as.factor(predictions2), plotit = TRUE)
+print(paste("Area under the curve (AUC):", round(roc2$auc, digits=3)))
+
+
+###=============================================================###
+# Cross-validation (imbalanced train)
+dtrain2 = data.matrix(train[,1:29])
+best_param2 = list()
+best_seednumber2 = 1234
+best_auc2 = Inf
+best_auc_index2 = 0
+
+for (iter in 1:10) {
+  param <- list(objective = "binary:logistic", eval_metric = "auc",
+                max_depth = 2, eta = 1, nthread = 2
+  )
+  cv.nround = 1000
+  cv.nfold = 5
+  seed.number = sample.int(10000, 1)[[1]]
+  set.seed(seed.number)
+  mdcv <- xgb.cv(data=dtrain2, params = param,
+                 nfold=cv.nfold, nrounds=cv.nround, verbose=0,
+                 early_stopping_rounds=8, maximize=FALSE,
+                 label=as.numeric(train$Class)-1)
+  
+  min_auc = min(mdcv$evaluation_log[, test_auc_mean])
+  min_auc_index = which.min(mdcv$evaluation_log[, test_auc_mean])
+  
+  if (min_auc < best_auc2) {
+    best_auc2 = min_auc
+    best_auc_index2 = min_auc_index
+    best_seednumber2 = seed.number
+    best_param2 = param
+  }
+}
+
+nround2 = best_auc2
+set.seed(best_seednumber2)
+
+
+###=============================================================###
+# Fit XGBoost model on imbalanced training set
+xgb2 = xgboost(data = dtrain2,
+               params = best_param2, 
+               nround = nround2, 
+               label=as.numeric(train$Class)-1)
+
+
+# Apply XGBoost model on downsampled test set
+pred = predict(xgb2, data.matrix(downsample.test[,1:29]))
+pred = as.numeric(pred>0.5)
+# Confusion matrix
+cm3 = confusionMatrix(as.factor(pred), downsample.test$Class
+                      ,dnn=c("Prediction", "Reference"))
+print(cm3)
+# Plot ROC curve
+roc3 = roc.curve(downsample.test$Class, as.factor(pred), plotit = TRUE)
+print(paste("Area under the curve (AUC):", round(roc3$auc, digits=3)))
+
+
+# Apply XGBoost model on imbalanced test set
+pred2 = predict(xgb2, data.matrix(test[,1:29]))
+pred2 = as.numeric(pred2>0.5)
+# Confusion matrix
+cm4 = confusionMatrix(as.factor(pred2), test$Class
+                     ,dnn=c("Prediction", "Reference"))
+print(cm4)
+# Plot ROC curve
+roc4 = roc.curve(test$Class, as.factor(pred2), plotit = TRUE)
+print(paste("Area under the curve (AUC):", round(roc4$auc, digits=3)))
+
+
+###=============================================================###
+# Model comparison
+print(paste("Sensitivity:"
+            , cm1$byClass["Sensitivity"]
+            ,"Specificity:"
+            , cm1$byClass["Specificity"]
+            , " AUC:"
+            , round(roc1$auc, digits=3)
+            , "(fit on downsampled training set & used on downsampled test set)"
+            ))
+print(paste("Sensitivity:"
+            , cm2$byClass["Sensitivity"]
+            ,"Specificity:"
+            , cm2$byClass["Specificity"]
+            , " AUC:"
+            , round(roc2$auc, digits=3)
+            ,"(fit on downsampled training set & used on imbalanced test set)"
+            ))
+print(paste("Sensitivity:"
+            , cm3$byClass["Sensitivity"]
+            ,"Specificity:"
+            , cm3$byClass["Specificity"]
+            , " AUC:"
+            , round(roc3$auc, digits=3)
+            ,"(fit on imbalanced training set & used on downsampled test set)"
+            ))
+print(paste("Sensitivity:"
+            , cm4$byClass["Sensitivity"]
+            ,"Specificity:"
+            , cm4$byClass["Specificity"]
+            , " AUC:"
+            , round(roc4$auc, digits=3)
+            ,"(fit on imbalanced training set & used on imbalanced test set)"
+            ))
 ```
-
-```{r}
-# Downsample the raw dataset: 492 frauds & 492 non-frauds
-df = setDF(credit_card_raw)
-df$Class = factor(df$Class)
-downsample.df = downSample(df[,-ncol(df)], df$Class)
-# XGBoost with cross-validation
-xgb_cv = xgb.cv(data=data.matrix(downsample.df[,1:29])
-                ,label=as.numeric(downsample.df$Class)-1
-                ,objective = "binary:logistic"
-                ,max.depth = 3
-                ,eta = 1
-                ,nthread = 2
-                ,nrounds = 4
-                ,nfold = 5
-                ,metrics=list("rmse","auc"))
-print(xgb_cv)
-```
-
 
 
