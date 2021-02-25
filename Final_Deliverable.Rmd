@@ -74,7 +74,8 @@ ctrl <- trainControl(method = "cv", number = 5)
 dt <- train(Class ~ ., data = downsample.train,
                method = 'rpart',
                trControl = ctrl)
-
+```
+```{r}
 #find best cp for decision model
 #the best model is about cp = 0.015
 #evaluate the best model using test data
@@ -85,6 +86,16 @@ confusionMatrix(pred, downsample.test$Class, positive = '1')
 
 #ROC curve
 roc.curve(downsample.test$Class,pred , plotit=TRUE)
+```
+```{r}
+#predict on imbalanced test set
+pred.imbalanced <- predict(dt, test)
+
+#performance
+confusionMatrix(pred.imbalanced, test$Class, positive = '1')
+
+#ROC curve
+roc.curve(test$Class, pred.imbalanced, plotit = TRUE)
 
 ```
 
