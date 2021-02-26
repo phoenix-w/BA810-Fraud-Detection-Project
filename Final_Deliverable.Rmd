@@ -20,11 +20,46 @@ library(randomForest)
 library(ggplot2)
 library(dplyr)
 library(solitude)
+library(ggplot2)
+library(glmnet)
 
-credit_card_raw = fread("creditcard.csv")
+#credit_card_raw = fread("creditcard.csv")
+credit_card_raw = fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
 ```
 
+## EDA
+```{r}
+common_theme <- theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+ggplot(data = credit_card_raw, aes(x = factor(Class), 
+                          y = prop.table(stat(count)), fill = factor(Class),
+                          label = scales::percent(prop.table(stat(count))))) +
+    geom_bar(position = "dodge") + 
+    geom_text(stat = 'count',
+              position = position_dodge(.9), 
+              vjust = -0.5, 
+              size = 3) + 
+    scale_x_discrete(labels = c("no fraud", "fraud"))+
+    scale_y_continuous(labels = scales::percent)+
+    labs(x = 'Class', y = 'Percentage') +
+    ggtitle("Distribution of class labels") +
+    common_theme
+```
+```{r}
+ggplot(data=credit_card_raw, aes(x = Time, fill = factor(Class))) + geom_histogram(bins = 100)+
+labs(x = "Time in seconds since first transaction", y = "No. of transactions") +
+ggtitle("Distribution of time of transaction by class") +
+facet_grid(Class ~ ., scales = "free_y") + common_theme
+```
+```{r}
+#histogram
+fraud_amount <- credit_card_raw[Class == 1]
+ggplot(fraud_amount, aes(as.integer(fraud_amount$Amount))) + geom_histogram() +
+labs(x = "Fraud Amount ($ dollars)", y = "Transaction Count") +
+ggtitle("Distribution of Fraud Amount") +
+facet_grid(Class ~ ., scales = "free_y") + common_theme
+```
 ## Splitting Data
+For all the models, we will be using the same 80-20 train-test split. There will be our imbalanced sets which are directly taken from the raw data and downsampled sets that even out the non-fraud to fraud transactions.
 ```{r}
 # Create train and test dataset
 credit_card_raw[, test:=0]
@@ -50,6 +85,10 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 ```
 
 ## Lasso Regression
+For this model, we will be running a lasso regression. We will perform a 10 fold cross validation to determine which lambda coefficient minimizes MSE the most and use that to make predictions. 
+
+
+We first train a model on our downsampled training dataset.
 ```{r}
 # Create formula
 formula <- as.formula(Class ~ .)
@@ -63,6 +102,8 @@ downsample.fit <- cv.glmnet(downsample.train.matrix, y.downsample.train, family 
 downsample.test.matrix <- model.matrix(formula, downsample.test) [, -1]
 imbalanced.test.matrix <- model.matrix(formula, test)[, -1]
 ```
+
+Next, we predict on a downsampled testset and the original imbalanced testset.
 ```{r}
 # Predicting Downsample test data
 downsample.test.predictions <- predict(downsample.fit, downsample.test.matrix, s = downsample.fit$lambda.min) 
@@ -76,6 +117,8 @@ predicted.classes <- ifelse(test.predictions > 0, 1, 0)
 confusionMatrix(as.factor(predicted.classes), test$Class, positive = "1")
 roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
 ```
+
+Now we train a model on our imbalanced training dataset. Due to the limitations of our computational power, our "imbalanced" set's non-fraud transaction count was reduced to 4000. This would reduce computational strain but still retain the imbalanced aspect of the original dataset. 
 ```{r}
 # Imbalanced training set modeling
 class_0 = copy(train[train$Class == 0,])
@@ -84,7 +127,10 @@ imbalanced.train <- rbind(x, train[train$Class == 1,])
 train.matrix <- model.matrix(formula, imbalanced.train)[, -1]
 y.train <- imbalanced.train$Class
 imbalanced.fit <- cv.glmnet(train.matrix, y.train, family = "binomial", alpha = 1, nfolds = 10)
+```
 
+As we did before, we will predict on a downsampled testset and the original imbalanced test set.
+```{r}
 # Predicting Downsample test data
 downsample.test.predictions <- predict(imbalanced.fit, downsample.test.matrix, s = imbalanced.fit$lambda.min) 
 predicted.classes <- ifelse(downsample.test.predictions > 0, 1, 0)
@@ -97,6 +143,8 @@ predicted.classes <- ifelse(test.predictions > 0, 1, 0)
 confusionMatrix(as.factor(predicted.classes), test$Class, positive = "1")
 roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
 ```
+
+Out of all the models, the downsampled training model that predicted the downsampled testset had the highest AUC.
 
 ## Logistic Regression
 ```{r}
@@ -415,6 +463,8 @@ print(paste("Sensitivity:"
 ```
 
 ## Isolation Forest
+
+As an additional bonus, we wanted to try Isolation Forest. This is an unsupervised model that was developed specifically to detect anomalies. 
 ```{r}
 # Copy new data as to not disturb other models
 iforest_train <- copy(train)
@@ -426,9 +476,11 @@ iso <- isolationForest$new(sample_size = length(iforest_train))
 # fit for data
 iso$fit(iforest_train)
 ```
+
+Next, we obtain the anomally scores. According to the documentation of this package, scores that are closer to 1 are likely outliers, while if all the scores hover around 0.5, then there is a low likelihood of outliers. 
+
+With this in mind, we set the threshold to 0.6.
 ```{r}
-# Obtain anomaly scores. Scores closer to 1 are likely outliers. 
-# All scores hovering around 0.5 indicate low likelihood of outliers, so we set the threshold to 0.6.
 iforest_scores_train = iso$predict(iforest_train)
 iforest_scores_train[order(anomaly_score, decreasing = TRUE)]
 iforest_train$predictions <- as.factor(ifelse(iforest_scores_train$anomaly_score >=0.6, 1, 0))
@@ -437,6 +489,8 @@ iforest_scores_test = iso$predict(iforest_test)
 iforest_scores_test[order(anomaly_score, decreasing = TRUE)]
 iforest_test$predictions <- as.factor(ifelse(iforest_scores_test$anomaly_score >=0.6, 1, 0))
 ```
+
+ROC and AUC results
 ```{r}
 # Confusion Matrix and ROC curve of training data
 confusionMatrix(iforest_train$predictions, as.factor(train$Class), positive = "1")
@@ -447,3 +501,5 @@ roc.curve(train$Class, iforest_train$predictions, plotit = TRUE)
 confusionMatrix(iforest_test$predictions, as.factor(test$Class), positive = "1")
 roc.curve(test$Class, iforest_test$predictions, plotit = TRUE)
 ```
+
+It appears that out of all of the algorithms we performed, Isolation Forest performed the worst. However though, the results are still strong enough to be significant. 
