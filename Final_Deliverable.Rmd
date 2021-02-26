@@ -136,20 +136,20 @@ roc.curve(test$Class, pred_imbalanced_org, plotit=TRUE)
 ```
 
 ## Decision Tree
-```{r}
-# Fit decision tree model
-#apply 5-folds cross validation to find the best parameter cp for decision tree
-ctrl <- trainControl(method = "cv", number = 5)
 
-#use downsample training set to fit model
+Apply 5-folds cross validation to find the best parameter cp for decision tree
+```{r}
+ctrl <- trainControl(method = "cv", number = 5)
+```
+Use downsample training set to fit model
+```{r}
 dt <- train(Class ~ ., data = downsample.train,
                method = 'rpart',
                trControl = ctrl)
 ```
+Find best cp for decision model which is cp = 0.015
+Then evaluate the model using downsample test dataset and output the confusion matrix and ROC curve.
 ```{r}
-#find best cp for decision model
-#the best model is about cp = 0.015
-#evaluate the best model using test data
 pred <- predict(dt, downsample.test)
 
 #performance
@@ -158,8 +158,8 @@ confusionMatrix(pred, downsample.test$Class, positive = '1')
 #ROC curve
 roc.curve(downsample.test$Class,pred , plotit=TRUE)
 ```
+Evaluate the model using imbalanced test dataset and output the confusion matrix and ROC curve.
 ```{r}
-#predict on imbalanced test set
 pred.imbalanced <- predict(dt, test)
 
 #performance
@@ -168,14 +168,13 @@ confusionMatrix(pred.imbalanced, test$Class, positive = '1')
 #ROC curve
 roc.curve(test$Class, pred.imbalanced, plotit = TRUE)
 ```
-
-
+Use imbalanced training set to fit model
 ```{r}
-#use imbalanced training set to fit model
 dt_imbalanced <- train(Class ~ ., data = train,
                method = 'rpart',
                trControl = ctrl)
 ```
+Evaluate the model using downsample test dataset and output the confusion matrix and ROC curve.
 ```{r}
 pred <- predict(dt_imbalanced, downsample.test)
 
@@ -185,6 +184,7 @@ confusionMatrix(pred, downsample.test$Class, positive = '1')
 #ROC curve
 roc.curve(downsample.test$Class, pred, plotit=TRUE)
 ```
+Evaluate the model using imbalanced test dataset and output the confusion matrix and ROC curve.
 ```{r}
 #predict on imbalanced test set
 pred.imbalanced <- predict(dt_imbalanced, test)
