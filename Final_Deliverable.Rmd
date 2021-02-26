@@ -49,6 +49,55 @@ test$Class <- factor(test$Class)
 downsample.test <- downSample(test[, -ncol(test)], test$Class)
 ```
 
+## Lasso Regression
+```{r}
+# Create formula
+formula <- as.formula(Class ~ .)
+
+# Downsample training set modeling 
+downsample.train.matrix <- model.matrix(formula, downsample.train)[, -1]
+y.downsample.train <- downsample.train$Class
+downsample.fit <- cv.glmnet(downsample.train.matrix, y.downsample.train, family = "binomial", alpha = 1, nfolds = 10)
+
+# Create testing matrices
+downsample.test.matrix <- model.matrix(formula, downsample.test) [, -1]
+imbalanced.test.matrix <- model.matrix(formula, test)[, -1]
+```
+```{r}
+# Predicting Downsample test data
+downsample.test.predictions <- predict(downsample.fit, downsample.test.matrix, s = downsample.fit$lambda.min) 
+predicted.classes <- ifelse(downsample.test.predictions > 0, 1, 0)
+confusionMatrix(as.factor(predicted.classes), downsample.test$Class, positive = "1")
+roc.curve(as.numeric(downsample.test$Class), as.numeric(predicted.classes), plotit = TRUE)
+
+# Predicting imbalanced test data
+test.predictions <- predict(downsample.fit, imbalanced.test.matrix, s = downsample.fit$lambda.min) 
+predicted.classes <- ifelse(test.predictions > 0, 1, 0)
+confusionMatrix(as.factor(predicted.classes), test$Class, positive = "1")
+roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
+```
+```{r}
+# Imbalanced training set modeling
+class_0 = copy(train[train$Class == 0,])
+x <- copy(class_0[sample(nrow(class_0), 4000),])
+imbalanced.train <- rbind(x, train[train$Class == 1,])
+train.matrix <- model.matrix(formula, imbalanced.train)[, -1]
+y.train <- imbalanced.train$Class
+imbalanced.fit <- cv.glmnet(train.matrix, y.train, family = "binomial", alpha = 1, nfolds = 10)
+
+# Predicting Downsample test data
+downsample.test.predictions <- predict(imbalanced.fit, downsample.test.matrix, s = imbalanced.fit$lambda.min) 
+predicted.classes <- ifelse(downsample.test.predictions > 0, 1, 0)
+confusionMatrix(as.factor(predicted.classes), downsample.test$Class, positive = "1")
+roc.curve(as.numeric(downsample.test$Class), as.numeric(predicted.classes), plotit = TRUE)
+
+#Predicting imbalanced test data
+test.predictions <- predict(imbalanced.fit, imbalanced.test.matrix, s = imbalanced.fit$lambda.min) 
+predicted.classes <- ifelse(test.predictions > 0, 1, 0)
+confusionMatrix(as.factor(predicted.classes), test$Class, positive = "1")
+roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
+```
+
 ## Logistic Regression
 ```{r}
 # Fit logistic regression model
@@ -363,36 +412,6 @@ print(paste("Sensitivity:"
             , round(roc4$auc, digits=3)
             ,"(imbalanced training & imbalanced test)"
 ))
-```
-
-## KNN
-```{r}
-# Set cross validation parameters
-knn_ctrl <- trainControl(method = "cv", number = 5)
-
-# Run model
-knn_model <- train(Class ~ ., data = downsample.train, method = "knn", trControl = knn_ctrl)
-```
-```{r}
-# Predict on downsampled test set
-knn_prediction <- predict(knn_model, downsample.test)
-
-# Confusion matrix
-confusionMatrix(knn_prediction, downsample.test$Class, positive = "1")
-
-#ROC curve on downsampled test data
-roc.curve(downsample.test$Class, knn_prediction, plotit = TRUE)
-```
-```{r}
-# Predict on imbalanced test set 
-prediction.imbalanced <- predict(knn_model, test)
-
-# Confusion matrix
-confusionMatrix(prediction.imbalanced, test$Class, positive = "1")
-
-#ROC curve on imbalanced test data
-knn_prediction_imbalanced <- predict(knn_model, test)
-roc.curve(test$Class, prediction.imbalanced, plotit = TRUE)
 ```
 
 ## Isolation Forest
