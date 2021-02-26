@@ -5,7 +5,6 @@ library(caret)
 library(ROCR)
 library("pROC")
 library("ROSE")
-library("magrittr")
 library(glmnet)
 credit_card_raw <- fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
 
@@ -69,8 +68,11 @@ imbalanced.fit <- cv.glmnet(train.matrix, y.train, family = "binomial", alpha = 
 downsample.test.predictions <- predict(imbalanced.fit, downsample.test.matrix, s = imbalanced.fit$lambda.min) 
 predicted.classes <- ifelse(downsample.test.predictions > 0, 1, 0)
 confusionMatrix(as.factor(predicted.classes), downsample.test$Class, positive = "1")
+roc.curve(as.numeric(downsample.test$Class), as.numeric(predicted.classes), plotit = TRUE)
 
 #Predicting imbalanced test data
 test.predictions <- predict(imbalanced.fit, imbalanced.test.matrix, s = imbalanced.fit$lambda.min) 
 predicted.classes <- ifelse(test.predictions > 0, 1, 0)
 confusionMatrix(as.factor(predicted.classes), test$Class, positive = "1")
+roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
+
