@@ -23,8 +23,8 @@ library(solitude)
 library(ggplot2)
 library(glmnet)
 
-#credit_card_raw = fread("creditcard.csv")
-credit_card_raw = fread("/Users/jeffrey/Documents/Boston University/BU-QST-Masters/Spring 2020/BA810/Team Project/Data/creditcard.csv")
+credit_card_raw = fread("creditcard.csv")
+
 ```
 
 ## EDA
