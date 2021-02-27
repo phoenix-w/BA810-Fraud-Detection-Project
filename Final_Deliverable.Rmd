@@ -47,12 +47,14 @@ ggplot(data = credit_card_raw, aes(x = factor(Class),
     ggtitle("Distribution of class labels") +
     common_theme
 ```
+Clearly the dataset is very imbalanced with 99.8% of cases being non-fraudulent transactions. A simple measure like accuracy is not appropriate here as even a classifier which labels all transactions as non-fraudulent will have over 99% accuracy. An appropriate measure of model performance here would be AUC (Area Under the Precision-Recall Curve).
 ```{r}
 ggplot(data=credit_card_raw, aes(x = Time, fill = factor(Class))) + geom_histogram(bins = 100)+
 labs(x = "Time in seconds since first transaction", y = "No. of transactions") +
 ggtitle("Distribution of time of transaction by class") +
 facet_grid(Class ~ ., scales = "free_y") + common_theme
 ```
+The ‘Time’ feature looks pretty similar across both types of transactions. One could argue that fraudulent transactions are more uniformly distributed.
 ```{r}
 #histogram
 fraud_amount <- credit_card_raw[Class == 1]
@@ -148,7 +150,10 @@ roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
 ```
 
 Out of all the models, the downsampled training model that predicted the downsampled testset had the highest AUC.
+Logistic regression is a simple regression model whose output is a score between 0 and 1. This is achieved by using the logistic function.
 
+Fit logistic regression model
+bulding two model on downsampl(balanced) train data and original(imbalanced) train data, then run each model on both orginal(imbalanced) and downsample(balanced) test data
 ## Logistic Regression
 ```{r}
 # Fit logistic regression model
@@ -168,9 +173,11 @@ roc.curve(downsample.test$Class, pred_down, plotit=TRUE)
 pred_imbalanced_down <- predict(down_fit, test) #imbalanced
 
 roc.curve(test$Class, pred_imbalanced_down, plotit = TRUE)
+```
 
-###########
 #fit the model on imbalanced data(downsampling)
+Apply the model on imbalanced train data(original), fit the model to imbalanced and balanced 
+```{r}
 org_fit <- glm(Class ~ .,family = "binomial" ,data = train)
 summary(org_fit,)
 
