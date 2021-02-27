@@ -173,35 +173,37 @@ print(paste("Area under the curve (AUC):", round(roc4$auc, digits=3)))
 
 ###=============================================================###
 # Model comparison
-print(paste("Sensitivity:"
-            , cm1$byClass["Sensitivity"]
-            ,"Specificity:"
-            , cm1$byClass["Specificity"]
-            , " AUC:"
-            , round(roc1$auc, digits=3)
-            , "(downsampled training & downsampled test)"
-))
-print(paste("Sensitivity:"
-            , cm2$byClass["Sensitivity"]
-            ,"Specificity:"
-            , cm2$byClass["Specificity"]
-            , " AUC:"
-            , round(roc2$auc, digits=3)
-            ,"(downsampled training & imbalanced test)"
-))
-print(paste("Sensitivity:"
-            , cm3$byClass["Sensitivity"]
-            ,"Specificity:"
-            , cm3$byClass["Specificity"]
-            , " AUC:"
-            , round(roc3$auc, digits=3)
-            ,"(imbalanced training & downsampled test)"
-))
-print(paste("Sensitivity:"
-            , cm4$byClass["Sensitivity"]
-            ,"Specificity:"
-            , cm4$byClass["Specificity"]
-            , " AUC:"
-            , round(roc4$auc, digits=3)
-            ,"(imbalanced training & imbalanced test)"
-))
+cat(paste("Sensitivity:"
+          , cm1$byClass["Sensitivity"]
+          ,"Specificity:"
+          , cm1$byClass["Specificity"]
+          , " AUC:"
+          , round(roc1$auc, digits=3))
+    , "(downsampled training & downsampled test)"
+    ,paste("Sensitivity:"
+           , cm2$byClass["Sensitivity"]
+           ,"Specificity:"
+           , cm2$byClass["Specificity"]
+           , " AUC:"
+           , round(roc2$auc, digits=3))
+    ,"(downsampled training & imbalanced test)"
+    ,paste("Sensitivity:"
+           , cm3$byClass["Sensitivity"]
+           ,"Specificity:"
+           , cm3$byClass["Specificity"]
+           , " AUC:"
+           , round(roc3$auc, digits=3))
+    ,"(imbalanced training & downsampled test)"
+    ,paste("Sensitivity:"
+           , cm4$byClass["Sensitivity"]
+           ,"Specificity:"
+           , cm4$byClass["Specificity"]
+           , " AUC:"
+           , round(roc4$auc, digits=3))
+    ,"(imbalanced training & imbalanced test)"
+    , sep = '\n')
+
+
+
+
+
