@@ -300,17 +300,6 @@ roc.curve(test$Class, pd.test.original, plotit=TRUE)
 roc.curve(test$Class, pd.test.original2, plotit=TRUE)
 roc.curve(downsample.test$Class, pd.test.original3, plotit=TRUE)
 ```
-Next we run cross validation with folds = 5, to find the optimal cp value and further improve the model accuracy. Accuracy rate is 99%. 
-```{r}
-numFolds <- trainControl(method = "cv", number = 5)
-
-cpGrid <- expand.grid(.cp = seq(0.01, 0.5, 0.01))
-train(train$Class~., data = train, method = "rpart", trControl = numFolds, tuneGrid = cpGrid)
-
-trainTreeCV <- rpart(Class~., data=train, method="class", cp= 0.01)
-predictionCV <- predict(trainTreeCV, newdata = test, type = "class")
-table(test$Class, predictionCV)
-```
 
 ## XGBoost
 In order to find the best parameters to fit the XGBoost model, we set randomly chosen values to the parameters and ran k-fold cross-validation. Each time, a set of parameters that maximized AUC was returned. We then created a loop to repeat this process 10 times. We selected the best set of parameters from the 10 iterations and used it to build the XGBoost model.
