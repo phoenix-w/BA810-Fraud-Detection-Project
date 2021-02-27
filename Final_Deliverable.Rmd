@@ -244,16 +244,16 @@ confusionMatrix(pred.imbalanced, test$Class, positive = '1')
 roc.curve(test$Class, pred.imbalanced, plotit = TRUE)
 ```
 ## Random Forest
+First Fit the random Forest with the downsampled train dataset(balanced) and plot the feature importance graph. 
 ```{r}
 # Fit random forest model
 fit_rndfor <- randomForest(downsample.train$Class~., data=downsample.train, ntree = 500, importance = TRUE)
 
 varImpPlot(fit_rndfor)
-
+```
+Then we make predictions by using the downsampled test set and the original test set and compute their confusion matrix. 
+```{r}
 #make predictions 
-pd <- predict(fit_rndfor, downsample.train[,-ncol(downsample.train)])
-table(observed = downsample.train[,ncol(downsample.train)], predicted = pd)
-
 pd.test <- predict(fit_rndfor, downsample.test[,-ncol(downsample.test)])
 table(observed = downsample.test[,ncol(downsample.test)], predicted = pd.test)
 
@@ -263,11 +263,15 @@ pd.test.original <- predict(fit_rndfor, test[,-ncol(test)])
 table(observed = test[,ncol(test)], predicted = pd.test.original)
 
 confusionMatrix(pd.test.original, test$Class, positive = "1")
-
+```
+We want to see how the model works with the imbalance dataset which is the original train set. 
+```{r}
 #Random Forest fit with original dataset
 fit_rndfor_origin <- randomForest(train$Class~., data=train, ntree = 500, importance = TRUE)
 varImpPlot(fit_rndfor_origin)
-
+```
+Following with making predictions with both downsampled test set and the original test set and compute the confusion matrix. 
+```{r}
 #make predictions
 pd.test.original2 <- predict(fit_rndfor_origin, test[,-ncol(test)])
 table(observed = test[,ncol(test)], predicted = pd.test.original2)
@@ -277,21 +281,22 @@ table(observed = downsample.test[,ncol(downsample.test)], predicted = pd.test.or
 
 confusionMatrix(pd.test.original2, test$Class, positive = "1")
 confusionMatrix(pd.test.original3, downsample.test$Class, positive = "1")
-
+```
+To better inspect the model accuracy, we also calculate the roc and auc for four models. 
+```{r}
 #ROC curve and AUC
 roc.curve(downsample.test$Class, pd.test, plotit=TRUE)
 roc.curve(test$Class, pd.test.original, plotit=TRUE)
 roc.curve(test$Class, pd.test.original2, plotit=TRUE)
 roc.curve(downsample.test$Class, pd.test.original3, plotit=TRUE)
-
-#cross validation 
-rf.cv <- rfcv(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], cv.fold = 10) 
-with(rf.cv, plot(n.var,error.cv))
-
+```
+Lastly, we tunning the parameter to see if we further minimize the error. 
+```{r}
 #tuning parameter
 bestmtry <- tuneRF(downsample.train[,-ncol(downsample.train)], downsample.train[,ncol(downsample.train)], stepFactor=1.5, improve=1e-5, ntree=500)
-print(bestmtry) #mtry = 4 gives an accuracy of 94%; mtry: Number of variables randomly sampled as candidates at each split.
+print(bestmtry)
 ```
+mtry = 4 gives an accuracy of 94%; mtry: Number of variables randomly sampled as candidates at each split.
 
 ## XGBoost
 In order to find the best parameters to fit the XGBoost model, we set randomly chosen values to the parameters and ran k-fold cross-validation. Each time, a set of parameters that maximized AUC was returned. We then created a loop to repeat this process 10 times. We selected the best set of parameters from the 10 iterations and used it to build the XGBoost model.
