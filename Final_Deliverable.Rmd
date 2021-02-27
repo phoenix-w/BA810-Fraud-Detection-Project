@@ -431,9 +431,20 @@ print(cm4)
 roc4 = roc.curve(test$Class, as.factor(pred2), plotit = TRUE)
 print(paste("Area under the curve (AUC):", round(roc4$auc, digits=3)))
 ```
-As shown below, the model trained on the downsampled training set produced the highest AUC when it was used to predict on the downsampled test set.
+
+
 ```{r}
 # Model comparison
+sets = list("1" = c("downsampled training set", "downsampled test set.")
+    ,"2" = c("downsampled training set", "imbalanced test set.")
+    ,"3" = c("imbalanced training set", "downsampled test set.")
+    ,"4" = c("imbalanced training set", "imbalanced test set."))
+
+i = which.max(c(round(roc1$auc, digits=3)
+           ,round(roc2$auc, digits=3)
+           ,round(roc3$auc, digits=3)
+           ,round(roc4$auc, digits=3)))
+
 cat(paste("Sensitivity:"
           , cm1$byClass["Sensitivity"]
           ,"Specificity:"
@@ -462,7 +473,12 @@ cat(paste("Sensitivity:"
           , " AUC:"
           , round(roc4$auc, digits=3))
           ,"(imbalanced training & imbalanced test)"
-   , sep = '\n')
+   ,""
+   ,paste("As shown above, the model trained on the",
+          sets[[i]][1],
+          "produced the highest AUC when it was used to predict on the",
+          sets[[i]][2])
+   ,sep = '\n')
 ```
 
 ## Isolation Forest
