@@ -44,9 +44,7 @@ best_auc = Inf
 best_auc_index = 0
 
 for (iter in 1:10) {
-  param <- list(objective = "binary:logistic", eval_metric = "auc",
-                max_depth = 2, eta = 1, nthread = 2
-  )
+  param <- list(objective = "binary:logistic", eval_metric = "auc")
   cv.nround = 1000
   cv.nfold = 5
   seed.number = sample.int(10000, 1)[[1]]
@@ -112,9 +110,7 @@ best_auc2 = Inf
 best_auc_index2 = 0
 
 for (iter in 1:10) {
-  param <- list(objective = "binary:logistic", eval_metric = "auc",
-                max_depth = 2, eta = 1, nthread = 2
-  )
+  param <- list(objective = "binary:logistic", eval_metric = "auc")
   cv.nround = 1000
   cv.nfold = 5
   seed.number = sample.int(10000, 1)[[1]]
