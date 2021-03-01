@@ -47,6 +47,7 @@ ggplot(data = credit_card_raw, aes(x = factor(Class),
     ggtitle("Distribution of class labels") +
     common_theme
 ```
+
 Clearly the dataset is very imbalanced with 99.8% of cases being non-fraudulent transactions. A simple measure like accuracy is not appropriate here as even a classifier which labels all transactions as non-fraudulent will have over 99% accuracy. An appropriate measure of model performance here would be AUC (Area Under the Precision-Recall Curve).
 ```{r}
 ggplot(data=credit_card_raw, aes(x = Time, fill = factor(Class))) + geom_histogram(bins = 100)+
@@ -54,6 +55,7 @@ labs(x = "Time in seconds since first transaction", y = "No. of transactions") +
 ggtitle("Distribution of time of transaction by class") +
 facet_grid(Class ~ ., scales = "free_y") + common_theme
 ```
+
 The ‘Time’ feature looks pretty similar across both types of transactions. One could argue that fraudulent transactions are more uniformly distributed.
 ```{r}
 #histogram
@@ -63,6 +65,7 @@ labs(x = "Fraud Amount ($ dollars)", y = "Transaction Count") +
 ggtitle("Distribution of Fraud Amount") +
 facet_grid(Class ~ ., scales = "free_y") + common_theme
 ```
+
 According to this distribution, the fraud amount is highly skewed to the left.
 
 ## Splitting Data
@@ -166,12 +169,12 @@ summary(down_fit,)
 pred_down <- predict(down_fit, downsample.test) #balanced
 
 #Evaluate model performance on test set
-confusionMatrix(data = as.factor(as.numeric(pred_down >0.5)), reference = downsample.test$Class)
+confusionMatrix(data = as.factor(as.numeric(pred_down >0.5)), reference = as.factor(downsample.test$Class), positive = "1")
 roc.curve(downsample.test$Class, pred_down, plotit=TRUE)
 
 #predict on imbalanced test set
 pred_imbalanced_down <- predict(down_fit, test) #imbalanced
-confusionMatrix(data = as.factor(as.numeric(pred_imbalanced_down >0.5)), reference = test$Class, positive = 1)
+confusionMatrix(data = as.factor(as.numeric(pred_imbalanced_down >0.5)), reference = as.factor(test$Class), positive = "1")
 roc.curve(test$Class, pred_imbalanced_down, plotit = TRUE)
 ```
 
@@ -183,13 +186,13 @@ summary(org_fit,)
 pred_org <- predict(org_fit, downsample.test)
 
 #Evaluate model performance on test set
-confusionMatrix(data = as.factor(as.numeric(pred_org >0.5)), reference = downsample.test$Class)
+confusionMatrix(data = as.factor(as.numeric(pred_org >0.5)), reference = as.factor(downsample.test$Class), positive = "1")
 roc.curve(downsample.test$Class, pred_org, plotit=TRUE)
 
 pred_imbalanced_org <- predict(org_fit, test)
 
 #Evaluate model performance on test set
-confusionMatrix(data = as.factor(as.numeric(pred_imbalanced_org >0.5)), reference = test$Class)
+confusionMatrix(data = as.factor(as.numeric(pred_imbalanced_org >0.5)), reference = as.factor(test$Class), positive = "1")
 roc.curve(test$Class, pred_imbalanced_org, plotit=TRUE)
 ```
 
