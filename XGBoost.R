@@ -75,14 +75,18 @@ xgb = xgboost(data = dtrain,
               params = best_param, 
               nround = nround, 
               label=as.numeric(downsample.train$Class)-1)
+# Feature importance
+xgb.importance(model=xgb)
 
 # Apply XGBoost model on downsampled test set
 predictions = predict(xgb, data.matrix(downsample.test[,1:29]))
 # Transform predictions to binary results
 predictions = as.numeric(predictions>0.5)
+predictions = as.factor(predictions)
 # Confusion matrix
-cm1 = confusionMatrix(as.factor(predictions), downsample.test$Class
-                      ,dnn=c("Prediction", "Reference"))
+cm1 = confusionMatrix(predictions, downsample.test$Class
+                      ,dnn=c("Prediction", "Reference")
+                      ,positive='1')
 print(cm1)
 # Plot ROC curve
 roc1 = roc.curve(downsample.test$Class, as.factor(predictions), plotit = TRUE)
@@ -92,9 +96,11 @@ print(paste("Area under the curve (AUC):", round(roc1$auc, digits=3)))
 # Apply XGBoost model on imbalanced test set
 predictions2 = predict(xgb, data.matrix(test[,1:29]))
 predictions2 = as.numeric(predictions2>0.5)
+predictions2 = as.factor(predictions2)
 # Confusion matrix
-cm2 = confusionMatrix(as.factor(predictions2), test$Class
-                      ,dnn=c("Prediction", "Reference"))
+cm2 = confusionMatrix(predictions2, test$Class
+                      ,dnn=c("Prediction", "Reference")
+                      ,positive='1')
 print(cm2)
 # Plot ROC curve
 roc2 = roc.curve(test$Class, as.factor(predictions2), plotit = TRUE)
@@ -141,14 +147,17 @@ xgb2 = xgboost(data = dtrain2,
                params = best_param2, 
                nround = nround2, 
                label=as.numeric(train$Class)-1)
-
+# Feature importance
+xgb.importance(model=xgb2)
 
 # Apply XGBoost model on downsampled test set
 pred = predict(xgb2, data.matrix(downsample.test[,1:29]))
 pred = as.numeric(pred>0.5)
+pred = as.factor(pred)
 # Confusion matrix
-cm3 = confusionMatrix(as.factor(pred), downsample.test$Class
-                      ,dnn=c("Prediction", "Reference"))
+cm3 = confusionMatrix(pred, downsample.test$Class
+                      ,dnn=c("Prediction", "Reference")
+                      ,positive='1')
 print(cm3)
 # Plot ROC curve
 roc3 = roc.curve(downsample.test$Class, as.factor(pred), plotit = TRUE)
@@ -158,9 +167,11 @@ print(paste("Area under the curve (AUC):", round(roc3$auc, digits=3)))
 # Apply XGBoost model on imbalanced test set
 pred2 = predict(xgb2, data.matrix(test[,1:29]))
 pred2 = as.numeric(pred2>0.5)
+pred2 = as.factor(pred2)
 # Confusion matrix
-cm4 = confusionMatrix(as.factor(pred2), test$Class
-                      ,dnn=c("Prediction", "Reference"))
+cm4 = confusionMatrix(pred2, test$Class
+                      ,dnn=c("Prediction", "Reference")
+                      ,positive='1')
 print(cm4)
 # Plot ROC curve
 roc4 = roc.curve(test$Class, as.factor(pred2), plotit = TRUE)
@@ -169,36 +180,53 @@ print(paste("Area under the curve (AUC):", round(roc4$auc, digits=3)))
 
 ###=============================================================###
 # Model comparison
-cat(paste("Sensitivity:"
-          , cm1$byClass["Sensitivity"]
-          ,"Specificity:"
-          , cm1$byClass["Specificity"]
-          , " AUC:"
-          , round(roc1$auc, digits=3))
-    , "(downsampled training & downsampled test)"
+sets = list("1" = c("downsampled training set", "downsampled test set.")
+            ,"2" = c("downsampled training set", "imbalanced test set.")
+            ,"3" = c("imbalanced training set", "downsampled test set.")
+            ,"4" = c("imbalanced training set", "imbalanced test set."))
+
+i = which.max(c(round(roc1$auc, digits=3)
+                ,round(roc2$auc, digits=3)
+                ,round(roc3$auc, digits=3)
+                ,round(roc4$auc, digits=3)))
+
+cat("Downsampled Training & Downsampled Test"
+    ,paste("Sensitivity:"
+           , cm1$byClass["Sensitivity"]
+           ,"Specificity:"
+           , cm1$byClass["Specificity"]
+           , " AUC:"
+           , round(roc1$auc, digits=3))
+    , ""
+    ,"Downsampled Training & Imbalanced Test"
     ,paste("Sensitivity:"
            , cm2$byClass["Sensitivity"]
            ,"Specificity:"
            , cm2$byClass["Specificity"]
            , " AUC:"
            , round(roc2$auc, digits=3))
-    ,"(downsampled training & imbalanced test)"
+    ,""
+    ,"Imbalanced Training & Downsampled Test"
     ,paste("Sensitivity:"
            , cm3$byClass["Sensitivity"]
            ,"Specificity:"
            , cm3$byClass["Specificity"]
            , " AUC:"
            , round(roc3$auc, digits=3))
-    ,"(imbalanced training & downsampled test)"
+    ,""
+    ,"Imbalanced Training & Imbalanced Test"
     ,paste("Sensitivity:"
            , cm4$byClass["Sensitivity"]
            ,"Specificity:"
            , cm4$byClass["Specificity"]
            , " AUC:"
            , round(roc4$auc, digits=3))
-    ,"(imbalanced training & imbalanced test)"
-    , sep = '\n')
-
+    ,""
+    ,paste("As shown above, the model trained on the",
+           sets[[i]][1],
+           "produced the highest AUC when it was used to predict on the",
+           sets[[i]][2])
+    ,sep = '\n')
 
 
 
