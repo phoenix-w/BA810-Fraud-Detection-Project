@@ -26,7 +26,7 @@ library(solitude)
 library(ggplot2)
 library(glmnet)
 
-credit_card_raw = fread("creditcard.csv")
+credit_card_raw = fread("/Users/jeffrey/creditcard.csv")
 
 ```
 
@@ -63,6 +63,8 @@ labs(x = "Fraud Amount ($ dollars)", y = "Transaction Count") +
 ggtitle("Distribution of Fraud Amount") +
 facet_grid(Class ~ ., scales = "free_y") + common_theme
 ```
+According to this distribution, the fraud amount is highly skewed to the left.
+
 ## Splitting Data
 For all the models, we will be using the same 80-20 train-test split. There will be our imbalanced sets which are directly taken from the raw data and downsampled sets that even out the non-fraud to fraud transactions.
 ```{r}
@@ -90,7 +92,7 @@ downsample.test <- downSample(test[, -ncol(test)], test$Class)
 ```
 
 ## Lasso Regression
-For this model, we will be running a lasso regression. We will perform a 10 fold cross validation to determine which lambda coefficient minimizes MSE the most and use that to make predictions. 
+For this model, we will be running a lasso regression. We will perform a 5 fold cross validation to determine which lambda value minimizes MSE the most and use that to make predictions. 
 
 
 We first train a model on our downsampled training dataset.
@@ -101,7 +103,7 @@ formula <- as.formula(Class ~ .)
 # Downsample training set modeling 
 downsample.train.matrix <- model.matrix(formula, downsample.train)[, -1]
 y.downsample.train <- downsample.train$Class
-downsample.fit <- cv.glmnet(downsample.train.matrix, y.downsample.train, family = "binomial", alpha = 1, nfolds = 10)
+downsample.fit <- cv.glmnet(downsample.train.matrix, y.downsample.train, family = "binomial", alpha = 1, nfolds = 5)
 
 # Create testing matrices
 downsample.test.matrix <- model.matrix(formula, downsample.test) [, -1]
@@ -131,7 +133,7 @@ x <- copy(class_0[sample(nrow(class_0), 4000),])
 imbalanced.train <- rbind(x, train[train$Class == 1,])
 train.matrix <- model.matrix(formula, imbalanced.train)[, -1]
 y.train <- imbalanced.train$Class
-imbalanced.fit <- cv.glmnet(train.matrix, y.train, family = "binomial", alpha = 1, nfolds = 10)
+imbalanced.fit <- cv.glmnet(train.matrix, y.train, family = "binomial", alpha = 1, nfolds = 5)
 ```
 
 As we did before, we will predict on a downsampled testset and the original imbalanced test set.
@@ -149,47 +151,45 @@ confusionMatrix(as.factor(predicted.classes), test$Class, positive = "1")
 roc.curve(as.numeric(test$Class), as.numeric(predicted.classes), plotit = TRUE)
 ```
 
-Out of all the models, the downsampled training model that predicted the downsampled testset had the highest AUC.
+## Logistic Regression
 Logistic regression is a simple regression model whose output is a score between 0 and 1. This is achieved by using the logistic function.
 
-Fit logistic regression model
-bulding two model on downsampl(balanced) train data and original(imbalanced) train data, then run each model on both orginal(imbalanced) and downsample(balanced) test data
-## Logistic Regression
+Fit logistic regression model by building two models on downsampl(balanced) train data and original(imbalanced) train data, then run each model on both orginal(imbalanced) and downsample(balanced) test data
 ```{r}
 # Fit logistic regression model
 set.seed(1)
 
 #fit the model on balanced data(downsampling)
-down_fit <- glm(Class ~ .,family = "binomial" ,data = downsample.train)
+down_fit <- glm(Class ~ ., family = "binomial" , data = downsample.train)
 summary(down_fit,)
 
 pred_down <- predict(down_fit, downsample.test) #balanced
-print('Fitting downsampled model to test data')
 
 #Evaluate model performance on test set
+confusionMatrix(data = as.factor(as.numeric(pred_down >0.5)), reference = downsample.test$Class)
 roc.curve(downsample.test$Class, pred_down, plotit=TRUE)
 
 #predict on imbalanced test set
 pred_imbalanced_down <- predict(down_fit, test) #imbalanced
-
+confusionMatrix(data = as.factor(as.numeric(pred_imbalanced_down >0.5)), reference = test$Class, positive = 1)
 roc.curve(test$Class, pred_imbalanced_down, plotit = TRUE)
 ```
 
-#fit the model on imbalanced data(downsampling)
 Apply the model on imbalanced train data(original), fit the model to imbalanced and balanced 
 ```{r}
 org_fit <- glm(Class ~ .,family = "binomial" ,data = train)
 summary(org_fit,)
 
 pred_org <- predict(org_fit, downsample.test)
-print('Fitting imbalanced model to downsample.test data')
 
 #Evaluate model performance on test set
+confusionMatrix(data = as.factor(as.numeric(pred_org >0.5)), reference = downsample.test$Class)
 roc.curve(downsample.test$Class, pred_org, plotit=TRUE)
 
 pred_imbalanced_org <- predict(org_fit, test)
 
 #Evaluate model performance on test set
+confusionMatrix(data = as.factor(as.numeric(pred_imbalanced_org >0.5)), reference = test$Class)
 roc.curve(test$Class, pred_imbalanced_org, plotit=TRUE)
 ```
 
@@ -253,6 +253,7 @@ confusionMatrix(pred.imbalanced, test$Class, positive = '1')
 #ROC curve
 roc.curve(test$Class, pred.imbalanced, plotit = TRUE)
 ```
+
 ## Random Forest
 First Fit the random Forest with the downsampled train dataset(balanced) and plot the feature importance graph. 
 ```{r}
@@ -486,7 +487,6 @@ cat(paste("Sensitivity:"
 ```
 
 ## Isolation Forest
-
 As an additional bonus, we wanted to try Isolation Forest. This is an unsupervised model that was developed specifically to detect anomalies. 
 ```{r}
 # Copy new data as to not disturb other models
@@ -524,5 +524,3 @@ roc.curve(train$Class, iforest_train$predictions, plotit = TRUE)
 confusionMatrix(iforest_test$predictions, as.factor(test$Class), positive = "1")
 roc.curve(test$Class, iforest_test$predictions, plotit = TRUE)
 ```
-
-It appears that out of all of the algorithms we performed, Isolation Forest performed the worst. However though, the results are still strong enough to be significant. 
