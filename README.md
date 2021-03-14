@@ -3,7 +3,7 @@
 ### Project Summary
 As a team, we were tasked with finding a topic of our interest, locating a dataset, and applying supervised learning algorithms to solve the problem. We chose a credit card fraud dataset for the importance of the subject matter and the challenge brought by its imbalanced class distribution (492 frauds out of 284,807 transactions).
 
-### Project Objectives
+### Project Objective
 We decided to build several supervised machine learning models and see which one performs the best in terms of identifying fraudulent transactions. Since the dataset is highly imbalanced with 99.8% of cases being non-fraudulent transactions, a simple measure like accuracy is not appropriate here as even a classifier which labels all transactions as non-fraudulent will have over 99% accuracy. The appropriate measure of model performance would be AUC (area under the ROC curve) and sensitivity (true positive rate).
 
 ### Data Source
