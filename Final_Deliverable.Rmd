@@ -1,6 +1,6 @@
 ---
 title: 'Team 5: Project Deliverable'
-author: "Roozbeh Jafari, Jeffrey Leung, Yi-shuan Wang, Ying Wu, Yuzhe Zheng"
+author: "Roozbeh Jafari, Jeffrey Leung, Phoenix Wang, Ying Wu, Yuzhe Zheng"
 ---
 
 ```{r setup, include=FALSE}
@@ -30,7 +30,7 @@ credit_card_raw = fread("/Users/jeffrey/creditcard.csv")
 
 ```
 
-## EDA
+## Exploratory Data Analysis
 ```{r}
 common_theme <- theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ggplot(data = credit_card_raw, aes(x = factor(Class), 
